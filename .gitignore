@@ -1,0 +1,11 @@
+# Dependências do Node (ignora a pasta gigante)
+/node_modules
+
+# Código compilado do TypeScript
+/dist
+
+# Variáveis de ambiente (segredos)
+.env
+
+# Logs
+npm-debug.log
