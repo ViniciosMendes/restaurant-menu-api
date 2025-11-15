@@ -16,13 +16,17 @@ export const restaurantRepository = {
     return restaurant || null;
   },
 
-  create: async (payload: RestaurantPayload): Promise<Restaurant> => {
+  create: async (payload: Required<RestaurantPayload>): Promise<Restaurant | null> => {
+    if(!payload.city || !payload.contact || !payload.kitchenType || !payload.name || !payload.uf || !payload.weekday || !payload.opensAt || !payload.closesAt){
+      return null;
+    }
+
     const now = new Date().toISOString();
 
     const newRestaurant: Restaurant = {
       ...payload,
       id: randomUUID(),
-      isActive: payload.isActive ?? true,
+      isActive: true,
       createdAt: now,
       updatedAt: now,
     };
@@ -33,19 +37,24 @@ export const restaurantRepository = {
 
   update: async (
     id: string,
-    payload: Partial<RestaurantPayload>,
+    payload: Partial<RestaurantPayload>
   ): Promise<Restaurant | null> => {
-    const index = db_r.findIndex((r) => r.id === id && r.isActive === true);
 
-    if (index === -1) {
-      return null;
-    }
+    const index = db_r.findIndex(r => r.id === id && r.isActive === true);
+
+    if (index === -1) return null;
 
     const currentRestaurant = db_r[index];
 
+    const filteredPayload = Object.fromEntries(
+      Object.entries(payload).filter(([key, value]) => 
+        value !== null && value !== undefined && value !== "" && key !== "isActive"
+      )
+    );
+
     const updatedRestaurant: Restaurant = {
       ...currentRestaurant,
-      ...payload,
+      ...filteredPayload, 
       updatedAt: new Date().toISOString(),
     };
 
@@ -90,7 +99,7 @@ export const restaurantRepository = {
       ...payload,
       restaurant_id: restaurant_id,
       id: randomUUID(),
-      isActive: payload.isActive ?? true,
+      isActive: true,
       createdAt: now,
       updatedAt: now,
     };

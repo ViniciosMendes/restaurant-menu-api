@@ -8,7 +8,7 @@ export const sectionRepository = {
         return section || null;
     },
 
-    updateSectionFull: async (id: string, payload: Partial<SectionPayload>): Promise<Sections | null> => {
+    updateSectionFull: async (id: string, payload: Partial<Pick<SectionPayload, 'name' | 'description'>>): Promise<Sections | null> => {
         const index = db_s.findIndex((s) => s.id === id && s.isActive === true);
 
         if (index === -1) {
@@ -38,7 +38,7 @@ export const sectionRepository = {
         return updatedSection;
     },
 
-    updateSectionPartial: async (id: string, payload: Partial<SectionPayload>): Promise<Sections | null> => {
+    updateSectionPartial: async (id: string, payload: Partial<Pick<SectionPayload, 'name' | 'description'>>): Promise<Sections | null> => {
         const index = db_s.findIndex((s) => s.id === id && s.isActive === true);
 
         if (index === -1) {
@@ -47,8 +47,8 @@ export const sectionRepository = {
 
         const currentSection = db_s[index];
         const filteredPayload = Object.fromEntries(
-            Object.entries(payload).filter(([_, value]) => {
-                return value !== "" && value !== null && value !== undefined;
+            Object.entries(payload).filter(([key, value]) => {
+                return value !== "" && value !== null && value !== undefined && key !== "isActive";
             })
         );
 

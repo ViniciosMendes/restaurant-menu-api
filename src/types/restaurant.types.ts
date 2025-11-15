@@ -10,7 +10,6 @@ export interface RestaurantPayload {
   weekday: number;
   opensAt: string;
   closesAt: string;
-  isActive?: boolean;
 }
 
 // Interface for the full Model (As it exists in the "DB")

@@ -1,7 +1,6 @@
 export interface SectionPayload {
     name: string;
     description: string;  
-    isActive: boolean; 
 }
 
 export interface Sections extends SectionPayload {
