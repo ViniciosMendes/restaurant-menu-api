@@ -25,6 +25,7 @@ app.get(BASE_URL, (req, res) => {
 // Main resource route
 // Connects the URL '/v1/restaurants' to the router file we created
 app.use(`${BASE_URL}/restaurants`, restaurantRoutes);
+// Connects the URL '/v1/sections' to the router file we created
 app.use(`${BASE_URL}/sections`, sectionsRoutes);
 
 // --- Server Start ---
