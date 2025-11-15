@@ -22,7 +22,6 @@ export const sectionRepository = {
         };
 
         if (
-            !merged.restaurant_id ||
             !merged.name ||
             !merged.description ||
             merged.isActive === undefined
