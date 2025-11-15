@@ -1,13 +1,13 @@
-// // src/routes/sections.routes.ts
-// import { Router } from 'express';
-// import { controller } from '../controllers/sections.controller';
+// src/routes/sections.routes.ts
+import { Router } from 'express';
+import { sectionController } from '../controllers/sections.controller';
 
-// const restaurantSections = Router();
+const router = Router();
 
-// // Define as rotas e linka com o controlador
-// restaurantSections.get('/:id', controller.findSection);
-// restaurantSections.put('/:id', controller.updateSectionFull);
-// restaurantSections.patch('/:id', controller.updateSectionPartial);
-// restaurantSections.delete('/:id', controller.deleteSection);
+// Define as rotas e linka com o controlador
+router.get('/:id', sectionController.findSection);
+router.put('/:id', sectionController.updateSectionFull);
+router.patch('/:id', sectionController.updateSectionPartial);
+router.delete('/:id', sectionController.deleteSection);
 
-// export default restaurantSections;
+export default router;

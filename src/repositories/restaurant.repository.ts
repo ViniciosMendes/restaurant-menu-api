@@ -1,10 +1,10 @@
 // src/repositories/restaurant.repository.ts
 import { Restaurant, RestaurantPayload } from '../types/restaurant.types';
 import { Sections, SectionPayload } from "../types/section.types";
+import { db_s } from "../repositories/sections.repository";
 import { randomUUID } from 'crypto';
 
 const db_r: Restaurant[] = [];
-const db_s: Sections[] = []; // Banco em memória
 
 export const restaurantRepository = {
   findAll: async (): Promise<Restaurant[]> => {
