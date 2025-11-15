@@ -1,6 +1,9 @@
 // src/index.ts
 import express from 'express';
 import restaurantRoutes from './routes/restaurant.routes';
+import restaurantSectionsRoutes from './routes/restaurantsections.routes';
+// import sectionsRoutes from './routes/sections.routes';
+
 
 // Create the main Express application
 const app = express();
@@ -23,6 +26,8 @@ app.get(BASE_URL, (req, res) => {
 // Main resource route
 // Connects the URL '/v1/restaurants' to the router file we created
 app.use(`${BASE_URL}/restaurants`, restaurantRoutes);
+
+// app.use(`${BASE_URL}/sections`, sectionsRoutes);
 
 // --- Server Start ---
 // Start listening for requests on the defined PORT

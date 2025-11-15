@@ -10,5 +10,7 @@ router.post('/', controller.create);
 router.get('/:id', controller.findById);
 router.patch('/:id', controller.update);
 router.delete('/:id', controller.remove);
+router.get('/:id/sections', controller.findAllSectionsOfRestaurant);
+router.post('/:id/sections', controller.createSectionOfRestaurant);
 
 export default router;

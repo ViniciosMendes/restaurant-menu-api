@@ -1,16 +1,18 @@
 // src/repositories/restaurant.repository.ts
 import { Restaurant, RestaurantPayload } from '../types/restaurant.types';
+import { Sections, SectionPayload } from "../types/section.types";
 import { randomUUID } from 'crypto';
 
-const db: Restaurant[] = [];
+const db_r: Restaurant[] = [];
+const db_s: Sections[] = []; // Banco em memória
 
-export const repository = {
+export const restaurantRepository = {
   findAll: async (): Promise<Restaurant[]> => {
-    return db.filter((r) => r.isActive === true);
+    return db_r.filter((r) => r.isActive === true);
   },
 
   findById: async (id: string): Promise<Restaurant | null> => {
-    const restaurant = db.find((r) => r.id === id && r.isActive === true);
+    const restaurant = db_r.find((r) => r.id === id && r.isActive === true);
     return restaurant || null;
   },
 
@@ -25,7 +27,7 @@ export const repository = {
       updatedAt: now,
     };
 
-    db.push(newRestaurant);
+    db_r.push(newRestaurant);
     return newRestaurant;
   },
 
@@ -33,13 +35,13 @@ export const repository = {
     id: string,
     payload: Partial<RestaurantPayload>,
   ): Promise<Restaurant | null> => {
-    const index = db.findIndex((r) => r.id === id && r.isActive === true);
+    const index = db_r.findIndex((r) => r.id === id && r.isActive === true);
 
     if (index === -1) {
       return null;
     }
 
-    const currentRestaurant = db[index];
+    const currentRestaurant = db_r[index];
 
     const updatedRestaurant: Restaurant = {
       ...currentRestaurant,
@@ -47,19 +49,53 @@ export const repository = {
       updatedAt: new Date().toISOString(),
     };
 
-    db[index] = updatedRestaurant;
+    db_r[index] = updatedRestaurant;
     return updatedRestaurant;
   },
 
   remove: async (id: string): Promise<boolean> => {
-    const index = db.findIndex((r) => r.id === id && r.isActive === true);
+    const index = db_r.findIndex((r) => r.id === id && r.isActive === true);
 
     if (index === -1) {
       return false;
     }
 
-    db[index].isActive = false;
-    db[index].updatedAt = new Date().toISOString();
+    db_r[index].isActive = false;
+    db_r[index].updatedAt = new Date().toISOString();
     return true;
+  },
+
+  findAllSectionsOfRestaurant: async (
+    restaurant_id: string
+  ): Promise<Sections[] | null> => {
+    const restaurant = await restaurantRepository.findById(restaurant_id);
+    if (!restaurant) {
+      return null;
+    }
+
+    return db_s.filter(
+      (s) => s.restaurant_id === restaurant_id && s.isActive === true
+    );
+  },
+
+  createSectionOfRestaurant: async (payload: SectionPayload, restaurant_id : string): Promise<Sections | null> => {
+    const restaurant = await restaurantRepository.findById(restaurant_id);
+    if (!restaurant) {
+      return null;
+    }
+
+    const now = new Date().toISOString();
+
+    const newSection: Sections = {
+      ...payload,
+      restaurant_id: restaurant_id,
+      id: randomUUID(),
+      isActive: payload.isActive ?? true,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    db_s.push(newSection);
+    return newSection;
   },
 };
