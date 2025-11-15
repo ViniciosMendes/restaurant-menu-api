@@ -48,7 +48,8 @@ export const restaurantRepository = {
 
     const filteredPayload = Object.fromEntries(
       Object.entries(payload).filter(([key, value]) => 
-        value !== null && value !== undefined && value !== "" && key !== "isActive"
+        value !== null && value !== undefined && value !== "" && 
+        key !== "isActive" && key !== "id" && key !== "createdAt" && key !== "updatedAt"
       )
     );
 

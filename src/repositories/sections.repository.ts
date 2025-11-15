@@ -8,31 +8,26 @@ export const sectionRepository = {
         return section || null;
     },
 
-    updateSectionFull: async (id: string, payload: Partial<Pick<SectionPayload, 'name' | 'description'>>): Promise<Sections | null> => {
-        const index = db_s.findIndex((s) => s.id === id && s.isActive === true);
-
-        if (index === -1) {
-            return null;
-        }
+    updateSectionFull: async (
+        id: string,
+        payload: Partial<Pick<SectionPayload, "name" | "description">>
+    ): Promise<Sections | null> => {
+        
+        const index = db_s.findIndex(s => s.id === id && s.isActive === true);
+        if (index === -1) return null;
 
         const currentSection = db_s[index];
-        const merged = {
-            ...currentSection,
-            ...payload,
-        };
-
-        if (
-            !merged.name ||
-            !merged.description ||
-            merged.isActive === undefined
-        ) {
-            return null;
-        }
 
         const updatedSection: Sections = {
-            ...merged,
+            ...currentSection,
+            name: payload.name ?? currentSection.name,
+            description: payload.description ?? currentSection.description,
             updatedAt: new Date().toISOString(),
         };
+
+        if (!updatedSection.name || !updatedSection.description) {
+            return null;
+        }
 
         db_s[index] = updatedSection;
         return updatedSection;
@@ -48,7 +43,8 @@ export const sectionRepository = {
         const currentSection = db_s[index];
         const filteredPayload = Object.fromEntries(
             Object.entries(payload).filter(([key, value]) => {
-                return value !== "" && value !== null && value !== undefined && key !== "isActive";
+                return value !== "" && value !== null && value !== undefined && 
+                key !== "isActive" && key !== "id" && key !== "createdAt" && key !== "updatedAt" && key !== "restaurant_id";
             })
         );
 
