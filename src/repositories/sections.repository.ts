@@ -4,12 +4,12 @@ export const db_s: Sections[] = []; // Banco em memória
 
 export const sectionRepository = {
     findSection: async (id: string): Promise<Sections | null> => {
-        const section = db_s.find((s) => s.id === id);
+        const section = db_s.find((s) => s.id === id && s.isActive === true);
         return section || null;
     },
 
     updateSectionFull: async (id: string, payload: Partial<SectionPayload>): Promise<Sections | null> => {
-        const index = db_s.findIndex((s) => s.id === id);
+        const index = db_s.findIndex((s) => s.id === id && s.isActive === true);
 
         if (index === -1) {
             return null;
@@ -40,7 +40,7 @@ export const sectionRepository = {
     },
 
     updateSectionPartial: async (id: string, payload: Partial<SectionPayload>): Promise<Sections | null> => {
-        const index = db_s.findIndex((s) => s.id === id);
+        const index = db_s.findIndex((s) => s.id === id && s.isActive === true);
 
         if (index === -1) {
             return null;
@@ -64,7 +64,7 @@ export const sectionRepository = {
     },
 
     deleteSection: async (id: string): Promise<boolean> => {
-        const index = db_s.findIndex((s) => s.id === id);
+        const index = db_s.findIndex((s) => s.id === id && s.isActive === true);
 
         if (index === -1) {
             return false;
