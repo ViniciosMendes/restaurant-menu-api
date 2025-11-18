@@ -3,7 +3,7 @@ import { Items, ItemPayload } from "../types/item.types";
 import { db_i } from "../repositories/item.repository";
 import { randomUUID } from 'crypto';
 
-export const db_s: Sections[] = []; // Banco em memória
+export const db_s: Sections[] = [];
 
 export const sectionRepository = {
     findSection: async (id: string): Promise<Sections | null> => {
@@ -11,6 +11,8 @@ export const sectionRepository = {
         return section || null;
     },
 
+    // Aqui contém um erro, onde o PUT deve atualizar todos os campos que são obrigatórios
+    // e caso esse campo seja vazio, ele deve ser atualizado com null.
     updateSectionFull: async (
         id: string,
         payload: Partial<Pick<SectionPayload, "name" | "description">>

@@ -2,6 +2,7 @@
 import express from 'express';
 import restaurantRoutes from './routes/restaurant.routes';
 import sectionsRoutes from './routes/sections.routes';
+import itemsRoutes from './routes/item.routes';
 
 
 // Create the main Express application
@@ -27,6 +28,8 @@ app.get(BASE_URL, (req, res) => {
 app.use(`${BASE_URL}/restaurants`, restaurantRoutes);
 // Connects the URL '/v1/sections' to the router file we created
 app.use(`${BASE_URL}/sections`, sectionsRoutes);
+// Connects the URL '/v1/items' to the router file we created
+app.use(`${BASE_URL}/items`, itemsRoutes);
 
 // --- Server Start ---
 // Start listening for requests on the defined PORT
