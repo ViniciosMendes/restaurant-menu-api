@@ -21,8 +21,14 @@ export const restaurantRepository = {
       return null;
     }
 
-    const now = new Date().toISOString();
+    const allString = Object.values(payload).every(
+      (value) => typeof value === "string" && value.trim() !== ""
+    );
+    if (!allString) {
+      return null;
+    }
 
+    const now = new Date().toISOString();
     const newRestaurant: Restaurant = {
       ...payload,
       id: randomUUID(),
@@ -47,10 +53,15 @@ export const restaurantRepository = {
     const currentRestaurant = db_r[index];
 
     const filteredPayload = Object.fromEntries(
-      Object.entries(payload).filter(([key, value]) => 
-        value !== null && value !== undefined && value !== "" && 
-        key !== "isActive" && key !== "id" && key !== "createdAt" && key !== "updatedAt"
-      )
+      Object.entries(payload).filter(([key, value]) => {
+        if (value === null || value === undefined || value === "") return false;
+
+        if (typeof value !== "string") return false;
+
+        if (["isActive", "id", "createdAt", "updatedAt"].includes(key)) return false;
+
+        return true;
+      })
     );
 
     const updatedRestaurant: Restaurant = {
