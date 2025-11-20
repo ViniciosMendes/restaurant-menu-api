@@ -5,6 +5,14 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
+
+    // NECESSÁRIO PARA DECORATORS
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    // NECESSÁRIO PARA ENTIDADES @Column()
+    "strictPropertyInitialization": false,
+
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true

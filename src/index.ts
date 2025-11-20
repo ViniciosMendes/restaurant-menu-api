@@ -1,9 +1,13 @@
 // src/index.ts
+// A IMPORTAÇÃO MAIS IMPORTANTE: Deve ser a primeira de todas.
+import 'reflect-metadata';
 import express from 'express';
+import { AppDataSource } from './data-source'; // Importe o AppDataSource
 import restaurantRoutes from './routes/restaurant.routes';
 import sectionsRoutes from './routes/sections.routes';
 import itemsRoutes from './routes/item.routes';
-
+import dotenv from 'dotenv';
+dotenv.config();
 
 // Create the main Express application
 const app = express();
@@ -32,7 +36,15 @@ app.use(`${BASE_URL}/sections`, sectionsRoutes);
 app.use(`${BASE_URL}/items`, itemsRoutes);
 
 // --- Server Start ---
-// Start listening for requests on the defined PORT
-app.listen(PORT, () => {
-  console.log(`[SERVER] Running on http://localhost:${PORT}`);
-});
+AppDataSource.initialize()
+  .then(() => {
+    console.log('Data Source has been initialized!');
+    // Start listening for requests on the defined PORT
+    app.listen(PORT, () => {
+      console.log(`[SERVER] Running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Error during Data Source initialization:', err);
+    process.exit(1); // Encerra a aplicação se a conexão com o DB falhar
+  });

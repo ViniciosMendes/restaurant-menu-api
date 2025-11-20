@@ -1,35 +1,34 @@
-# Estágio 1: Builder - Onde o código é compilado
+# ========================
+# STAGE 1: BUILDER
+# ========================
 FROM node:22-alpine AS builder
 
-# Define o diretório de trabalho dentro do contêiner
 WORKDIR /app
 
-# Copia os arquivos de dependências
 COPY package*.json ./
-
-# Instala TODAS as dependências (incluindo devDependencies para o build)
 RUN npm install
 
-# Copia o resto do código-fonte
 COPY . .
-
-# Compila o código TypeScript para JavaScript
 RUN npm run build
 
-# Estágio 2: Produção - A imagem final e otimizada
+
+# ========================
+# STAGE 2: PRODUCTION
+# ========================
 FROM node:22-alpine
 
 WORKDIR /app
 
-# Copia apenas os artefatos de produção do estágio 'builder'
+# Copia arquivos compilados e package.json
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
 
-# Instala apenas as dependências de produção
+# Instala apenas dependências de produção
 RUN npm install --omit=dev
 
-# Expõe a porta que a aplicação vai usar
+ENV NODE_ENV=production
+
 EXPOSE 3000
 
-# Comando para iniciar a aplicação
-CMD [ "node", "dist/index.js" ]
+# Executa migrations em JS e depois inicia a API
+CMD ["sh", "-c", "npm run migration:run:prod && node dist/index.js"]
