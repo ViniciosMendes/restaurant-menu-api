@@ -1,0 +1,170 @@
+// src/repositories/section.repository.ts
+import { Request, Response } from 'express';
+import { AppDataSource } from '../data-source';
+import { Section } from '../models/sections.models';
+
+const sectionRepository = AppDataSource.getRepository(Section);
+
+export const getSections = async (req: Request, res: Response): Promise<Response> => {
+    try{
+        const id = parseInt(req.params.id);
+
+        const sections = await sectionRepository
+        .createQueryBuilder("sections")
+        .where("sections.isActive = :active AND sections.section_id = :id", { active: true, id, })
+        .orderBy("sections.section_id", "ASC")
+        .getMany();
+
+        if(!sections || sections.length === 0)
+            return res.status(404).json({ message: 'Sections not found.' });
+
+        return res.status(200).json(sections);
+    }catch(error){
+        return res.status(500).json({ message: 'Internal server error.' });
+    }
+};
+
+export const updateSectionPartial = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const id = parseInt(req.params.id);
+
+    // Somente estes campos podem ser enviados
+    const allowedFields = ["name", "description"];
+
+    // ❌ Rejeita campos inválidos
+    for (const key of Object.keys(req.body)) {
+      if (!allowedFields.includes(key)) {
+        return res.status(400).json({ message: "Invalid request body." });
+      }
+    }
+
+    // ✔ limites de tamanho
+    const sizeLimits: Record<string, number> = {
+      name: 30,
+      description: 200,
+    };
+
+    for (const key of Object.keys(req.body)) {
+      const value = req.body[key];
+      if (typeof value === "string" && sizeLimits[key] !== undefined) {
+        if (value.length > sizeLimits[key]) {
+          return res.status(400).json({
+            message: `Invalid request body.`,
+          });
+        }
+      }
+    }
+
+    const result = await AppDataSource.transaction(async (manager) => {
+      const repo = manager.getRepository(Section);
+
+      const section = await repo.findOne({
+        where: { section_id: id, isActive: true },
+      });
+
+      if (!section) throw new Error("NOT_FOUND");
+
+      // ✔ Atualiza somente campos enviados
+      for (const key of Object.keys(req.body)) {
+        (section as any)[key] = req.body[key];
+      }
+
+      const updated = await repo.save(section);
+      return updated;
+    });
+
+    return res.status(200).json(result);
+
+  } catch (error: any) {
+    console.error(error);
+    if (error.message === "NOT_FOUND") {
+      return res.status(404).json({ message: "Section not found." });
+    }
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+
+export const updateSectionFull = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const id = parseInt(req.params.id);
+
+    // Somente estes campos devem ser aceitos
+    const allowedFields = ["name", "description"];
+
+    // ❌ Rejeita campos inválidos
+    for (const key of Object.keys(req.body)) {
+      if (!allowedFields.includes(key)) {
+        return res.status(400).json({ message: "Invalid request body." });
+      }
+    }
+
+    // ✔ limites de tamanho
+    const sizeLimits: Record<string, number> = {
+      name: 30,
+      description: 200,
+    };
+
+    for (const key of Object.keys(req.body)) {
+      const value = req.body[key];
+      if (typeof value === "string" && sizeLimits[key] !== undefined) {
+        if (value.length > sizeLimits[key]) {
+          return res.status(400).json({
+            message: "Invalid request body.",
+          });
+        }
+      }
+    }
+
+    const result = await AppDataSource.transaction(async (manager) => {
+      const repo = manager.getRepository(Section);
+
+      const section = await repo.findOne({
+        where: { section_id: id, isActive: true },
+      });
+
+      if (!section) throw new Error("NOT_FOUND");
+
+      // ✔ PUT = sobrescreve tudo
+      section.name = req.body.name ?? "";
+      section.description = req.body.description ?? "";
+
+      const updated = await repo.save(section);
+      return updated;
+    });
+
+    return res.status(200).json(result);
+
+  } catch (error: any) {
+    console.error(error);
+    if (error.message === "NOT_FOUND") {
+      return res.status(404).json({ message: "Section not found." });
+    }
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+
+export const deleteSections = async (req: Request, res: Response): Promise<Response> => {
+    try{
+        const id = parseInt(req.params.id);
+        const section = await sectionRepository.findOneBy({ section_id: id, isActive: true });
+
+        if(!section)
+            return res.status(404).json({ message: 'Section not found.' });
+
+        section.isActive = false;
+        await sectionRepository.save(section);
+
+        return res.status(204).send();
+    }catch(error){
+        return res.status(500).json({ message: 'Internal server error.' });
+    }
+};
+
+export default {
+    getSections,
+    updateSectionPartial,
+    updateSectionFull,
+    deleteSections,
+}

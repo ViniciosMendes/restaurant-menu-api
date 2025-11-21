@@ -1,7 +1,9 @@
 services:
   app:
     container_name: fatec-api-container
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
     ports:
       - "3000:3000"
     depends_on:
@@ -19,13 +21,16 @@ services:
       DATABASE_NAME: restaurant_api
     networks:
       - fatec-network
+    volumes:
+      - .:/app
+      - /app/node_modules
 
   db:
     image: postgres:14-alpine
     container_name: fatec-postgres
     restart: always
     ports:
-      - "5432:5432"
+      - "5434:5432"
     environment:
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: restaurant_api

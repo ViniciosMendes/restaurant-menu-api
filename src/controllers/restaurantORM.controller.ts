@@ -1,14 +1,15 @@
 import { Request, Response } from 'express';
 import { AppDataSource } from '../data-source';
 import { Restaurant } from '../models/restaurant.models';
+import { Section } from '../models/sections.models';
 import { RestaurantOpeningHour } from '../models/restaurantopeninghour.models';
 import { createRestaurantDTO } from "../dtos/restaurant.dtos";
-
 
 /**
  * Obtém o repositório da entidade Restaurant.
  */
 const restaurantRepository = AppDataSource.getRepository(Restaurant);
+const sectionRepository = AppDataSource.getRepository(Section);
 
 /**
  * @description Busca todos os restaurantes.
@@ -39,7 +40,6 @@ export const getRestaurants = async (req: Request, res: Response): Promise<Respo
       city: r.city,
       uf: r.uf,
       contact: r.contact,
-      isActive: r.isActive,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
       opening: r.openingHours.map(o => ({
@@ -86,7 +86,6 @@ export const getRestaurantById = async (req: Request, res: Response): Promise<Re
       city: restaurant.city,
       uf: restaurant.uf,
       contact: restaurant.contact,
-      isActive: restaurant.isActive,
       createdAt: restaurant.createdAt,
       updatedAt: restaurant.updatedAt,
       opening: restaurant.openingHours.map(o => ({
@@ -111,6 +110,14 @@ export const createRestaurant = async (req: Request, res: Response): Promise<Res
   try {
     // Validação do corpo da requisição
     const data = createRestaurantDTO.parse(req.body);
+
+    if(!data.opening || !data.city || !data.contact || !data.kitchenType || !data.name || !data.uf ||
+        typeof data.city !== "string" || typeof data.contact !== "string" || typeof data.kitchenType !== "string" ||
+        typeof data.name !== "string" || typeof data.uf !== "string" || data.city.length > 30 ||
+        data.contact.length > 11 || data.kitchenType.length > 50 || data.name.length > 20 || data.uf.length > 2
+    ){
+        return res.status(400).json({ message: "Invalid request body." });
+    }
 
     const result = await AppDataSource.transaction(async (manager) => {
       // ---- SALVAR RESTAURANTE ----
@@ -156,7 +163,6 @@ export const createRestaurant = async (req: Request, res: Response): Promise<Res
         city: result.savedRestaurant.city,
         uf: result.savedRestaurant.uf,
         contact: result.savedRestaurant.contact,
-        isActive: result.savedRestaurant.isActive,
         createdAt: result.savedRestaurant.createdAt,
         updatedAt: result.savedRestaurant.updatedAt,
       },
@@ -180,7 +186,7 @@ export const createRestaurant = async (req: Request, res: Response): Promise<Res
 
 /**
  * @description Atualiza um restaurante existente.
- * @route PUT /restaurants/:id
+ * @route PATCH /restaurants/:id
  */
 export const updateRestaurant = async (req: Request, res: Response): Promise<Response> => {
   try {
@@ -190,7 +196,31 @@ export const updateRestaurant = async (req: Request, res: Response): Promise<Res
     // Verifica se não há campos extras
     for (const key of Object.keys(req.body)) {
       if (!allowedFields.includes(key)) {
-        return res.status(400).json({ message: `Field "${key}" is not allowed.` });
+        return res.status(400).json({ message: `Invalid request body.` });
+      }
+    }
+
+    // -----------------------------
+    // ✔ Validação de tamanho
+    // -----------------------------
+    const sizeLimits: Record<string, number> = {
+      name: 20,
+      kitchenType: 50,
+      city: 30,
+      uf: 2,
+      contact: 11
+    };
+
+    for (const key of Object.keys(req.body)) {
+      const value = req.body[key];
+
+      // só valida se for string e se existir
+      if (typeof value === "string" && sizeLimits[key] !== undefined) {
+        if (value.length > sizeLimits[key]) {
+          return res.status(400).json({
+            message: `Field '${key}' exceeds maximum length of ${sizeLimits[key]}.`
+          });
+        }
       }
     }
 
@@ -198,10 +228,10 @@ export const updateRestaurant = async (req: Request, res: Response): Promise<Res
       // ---- BUSCAR RESTAURANTE ----
       const restaurant = await manager.getRepository(Restaurant).findOne({ where: { id, isActive: true } });
       if (!restaurant) {
-        throw new Error('NOT_FOUND'); // tratamos fora da transação
+        throw new Error('NOT_FOUND');
       }
 
-      // ---- ATUALIZAR CAMPOS DO RESTAURANTE ----
+      // ---- ATUALIZAR CAMPOS ----
       for (const key of Object.keys(req.body)) {
         if (key !== 'opening') {
           (restaurant as any)[key] = req.body[key];
@@ -217,7 +247,6 @@ export const updateRestaurant = async (req: Request, res: Response): Promise<Res
             throw new Error('MISSING_OPENING_FIELDS');
           }
 
-          // Procura horário existente
           const existing = await manager.getRepository(RestaurantOpeningHour).findOne({
             where: { restaurantId: id, dayOfWeek: item.day },
           });
@@ -242,7 +271,7 @@ export const updateRestaurant = async (req: Request, res: Response): Promise<Res
       return updatedRestaurant;
     });
 
-    // Busca os horários atualizados para retorno
+    // Busca os horários atualizados
     const restaurantWithHours = await restaurantRepository
       .createQueryBuilder("restaurant")
       .leftJoinAndSelect("restaurant.openingHours", "opening", "opening.isActive = :active", { active: true })
@@ -256,7 +285,6 @@ export const updateRestaurant = async (req: Request, res: Response): Promise<Res
       city: restaurantWithHours!.city,
       uf: restaurantWithHours!.uf,
       contact: restaurantWithHours!.contact,
-      isActive: restaurantWithHours!.isActive,
       createdAt: restaurantWithHours!.createdAt,
       updatedAt: restaurantWithHours!.updatedAt,
       opening: restaurantWithHours!.openingHours.map(o => ({
@@ -304,10 +332,67 @@ export const deleteRestaurant = async (req: Request, res: Response): Promise<Res
   }
 };
 
+export const createSectionOfRestaurant = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const id = parseInt(req.params.id);
+    const { name, description} = req.body;
+
+    // Erro se faltar name ou description
+    if ( !name || !description ||
+        typeof name !== "string" || typeof description !== "string" ||
+        name.length > 30 || description.length > 200 ) {
+      return res.status(400).json({
+        message: "Invalid request body."
+      });
+    }
+
+    const section = await sectionRepository.save({
+      restaurant_id: id,
+      name,
+      description});
+
+    return res.status(201).json({
+      section: {
+        section_id: section.section_id, 
+        name: section.name,
+        description: section.description,
+        restaurantId: section.restaurant_id,
+        createdAt: section.createdAt,
+        updatedAt: section.updatedAt,
+      }
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+export const findAllSectionsOfRestaurant = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const id = parseInt(req.params.id);
+
+    const sections = await sectionRepository
+      .createQueryBuilder("section")
+      .where("section.isActive = :active AND section.restaurant_id = :id", { active: true, id })
+      .getMany();
+
+    if(!sections || sections.length === 0){
+        return res.status(404).json({ message: "Sections not found." });
+    }
+
+    return res.status(200).json(sections);
+  }catch(error){
+    return res.status(500).json({ message: "Internal server error." });
+  }
+}
+
 export default {
   getRestaurants,
   getRestaurantById,
   createRestaurant,
   updateRestaurant,
   deleteRestaurant,
+  createSectionOfRestaurant,
+  findAllSectionsOfRestaurant,
 };

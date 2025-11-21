@@ -17,8 +17,7 @@ router.post('/', controllerORM.createRestaurant);
 router.get('/:id', controllerORM.getRestaurantById);
 router.patch('/:id', controllerORM.updateRestaurant);
 router.delete('/:id', controllerORM.deleteRestaurant);
-
-router.get('/:id/sections', controller.findAllSectionsOfRestaurant);
-router.post('/:id/sections', controller.createSectionOfRestaurant);
+router.get('/:id/sections', controllerORM.findAllSectionsOfRestaurant);
+router.post('/:id/sections', controllerORM.createSectionOfRestaurant);
 
 export default router;

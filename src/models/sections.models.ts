@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   JoinColumn,
+  ManyToOne,
   CreateDateColumn,
   UpdateDateColumn,
 } from "typeorm";
@@ -11,11 +12,12 @@ import { Restaurant } from "./restaurant.models"; // se existir o model Restaura
 @Entity("sections")
 export class Section {
   @PrimaryGeneratedColumn({ name: "section_id" })
-  id: number;
+  section_id: number;
 
   @Column({ name: "restaurant_id", type: "int", nullable: true })
-  restaurantId: number;
+  restaurant_id: number;
 
+  @ManyToOne(() => Restaurant)
   @JoinColumn({ name: "restaurant_id" })
   restaurant: Restaurant;
 
