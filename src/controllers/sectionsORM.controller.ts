@@ -2,8 +2,11 @@
 import { Request, Response } from 'express';
 import { AppDataSource } from '../data-source';
 import { Section } from '../models/sections.models';
+import { Item } from '../models/items.models';
 
 const sectionRepository = AppDataSource.getRepository(Section);
+const itemRepository = AppDataSource.getRepository(Item);
+
 
 export const getSections = async (req: Request, res: Response): Promise<Response> => {
     try{
@@ -162,9 +165,76 @@ export const deleteSections = async (req: Request, res: Response): Promise<Respo
     }
 };
 
+export const createItem = async (req: Request, res: Response): Promise<Response> => {
+    try{
+        const id = parseInt(req.params.id);
+        const { name, description, price } = req.body;
+        
+        // Validações
+        if (
+            !name ||
+            !description ||
+            price === undefined ||
+            typeof name !== "string" ||
+            typeof description !== "string" ||
+            typeof price !== "number" ||
+            isNaN(price) ||
+            price < 0 ||
+            name.length > 30 ||
+            description.length > 200
+        ) {
+            return res.status(400).json({ message: 'Invalid request body.' });
+        }
+
+        const fixedPrice = Math.floor(price * 100) / 100;
+
+        const item = await itemRepository.save({
+            section_id: id,
+            name,
+            description,
+            price: fixedPrice
+        });
+
+        return res.status(201).json({
+            item: {
+                item_id: item.item_id,
+                section_id: item.section_id,
+                name: item.name,
+                description: item.description,
+                price: item.price,
+                createdAt: item.createdAt,
+                updatedAt: item.updatedAt,
+            }
+        });
+    }catch(error){
+        return res.status(500).json({ message: 'Internal server error.' });
+    }
+};
+
+export const findAllItemsOfSection = async (req: Request, res: Response): Promise<Response> => {
+    try{
+        const id = parseInt(req.params.id);
+
+        const items = await itemRepository
+        .createQueryBuilder("items")
+        .where("items.isActive = :active AND items.section_id = :id", { active: true, id, })
+        .orderBy("items.item_id", "ASC")
+        .getMany();
+
+        if(!items || items.length === 0)
+            return res.status(404).json({ message: 'Items not found.' });
+
+        return res.status(200).json(items);
+    }catch(error){
+        return res.status(500).json({ message: 'Internal server error.' });
+    }
+};
+
 export default {
     getSections,
     updateSectionPartial,
     updateSectionFull,
     deleteSections,
+    createItem,
+    findAllItemsOfSection,
 }
