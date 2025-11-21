@@ -3,18 +3,12 @@ import { AppDataSource } from '../data-source';
 import { Restaurant } from '../models/restaurant.models';
 import { Section } from '../models/sections.models';
 import { RestaurantOpeningHour } from '../models/restaurantopeninghour.models';
-import { createRestaurantDTO } from "../dtos/restaurant.dtos";
+import { createRestaurantDTO, updateRestaurantDTO } from "../dtos/restaurant.dtos";
+import { z } from "zod";
 
-/**
- * Obtém o repositório da entidade Restaurant.
- */
 const restaurantRepository = AppDataSource.getRepository(Restaurant);
 const sectionRepository = AppDataSource.getRepository(Section);
 
-/**
- * @description Busca todos os restaurantes.
- * @route GET /restaurants
- */
 export const getRestaurants = async (req: Request, res: Response): Promise<Response> => {
   try {
     const restaurants = await restaurantRepository
@@ -56,10 +50,6 @@ export const getRestaurants = async (req: Request, res: Response): Promise<Respo
   }
 };
 
-/**
- * @description Busca um restaurante pelo ID.
- * @route GET /restaurants/:id
- */
 export const getRestaurantById = async (req: Request, res: Response): Promise<Response> => {
   try {
     const id = parseInt(req.params.id);
@@ -102,25 +92,11 @@ export const getRestaurantById = async (req: Request, res: Response): Promise<Re
   }
 };
 
-/**
- * @description Cria um novo restaurante.
- * @route POST /restaurants
- */
 export const createRestaurant = async (req: Request, res: Response): Promise<Response> => {
   try {
-    // Validação do corpo da requisição
     const data = createRestaurantDTO.parse(req.body);
 
-    if(!data.opening || !data.city || !data.contact || !data.kitchenType || !data.name || !data.uf ||
-        typeof data.city !== "string" || typeof data.contact !== "string" || typeof data.kitchenType !== "string" ||
-        typeof data.name !== "string" || typeof data.uf !== "string" || data.city.length > 30 ||
-        data.contact.length > 11 || data.kitchenType.length > 50 || data.name.length > 20 || data.uf.length > 2
-    ){
-        return res.status(400).json({ message: "Invalid request body." });
-    }
-
     const result = await AppDataSource.transaction(async (manager) => {
-      // ---- SALVAR RESTAURANTE ----
       const restaurant = manager.getRepository(Restaurant).create({
         name: data.name,
         kitchenType: data.kitchenType,
@@ -132,29 +108,21 @@ export const createRestaurant = async (req: Request, res: Response): Promise<Res
 
       const savedRestaurant = await manager.getRepository(Restaurant).save(restaurant);
 
-      // ---- CRIAR REGISTROS DE OPENING HOURS ----
-      const openingRecords = data.opening.map((item, index) => {
-        if (!item.day || !item.opensAt || !item.closesAt) {
-          throw new Error(
-            `Opening hour at index ${index} is missing required fields (day, opensAt, closesAt)`
-          );
-        }
-
-        return manager.getRepository(RestaurantOpeningHour).create({
+      const openingRecords = data.opening.map((item) =>
+        manager.getRepository(RestaurantOpeningHour).create({
           dayOfWeek: item.day,
           opensAt: item.opensAt,
           closesAt: item.closesAt,
           restaurant: savedRestaurant,
           isActive: true,
-        });
-      });
+        })
+      );
 
       await manager.getRepository(RestaurantOpeningHour).save(openingRecords);
 
       return { savedRestaurant, openingRecords };
     });
 
-    // ---- RETORNO FORMATADO ----
     return res.status(201).json({
       restaurant: {
         id: result.savedRestaurant.id,
@@ -166,119 +134,85 @@ export const createRestaurant = async (req: Request, res: Response): Promise<Res
         createdAt: result.savedRestaurant.createdAt,
         updatedAt: result.savedRestaurant.updatedAt,
       },
-      opening: result.openingRecords.map(o => ({
+      opening: result.openingRecords.map((o) => ({
         day: o.dayOfWeek,
         opensAt: o.opensAt,
         closesAt: o.closesAt,
       })),
     });
+
   } catch (error) {
     console.error(error);
 
-    if (error instanceof Error && "issues" in (error as any)) {
-      // Erro de validação do Zod
-      return res.status(400).json({ message: "Invalid request body.", error });
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        message: "Invalid request body."
+      });
     }
 
     return res.status(500).json({ message: "Internal server error." });
   }
 };
 
-/**
- * @description Atualiza um restaurante existente.
- * @route PATCH /restaurants/:id
- */
 export const updateRestaurant = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const id = parseInt(req.params.id);
-    const allowedFields = ['name', 'kitchenType', 'city', 'uf', 'contact', 'isActive', 'opening'];
-
-    // Verifica se não há campos extras
-    for (const key of Object.keys(req.body)) {
-      if (!allowedFields.includes(key)) {
-        return res.status(400).json({ message: `Invalid request body.` });
-      }
-    }
-
-    // -----------------------------
-    // ✔ Validação de tamanho
-    // -----------------------------
-    const sizeLimits: Record<string, number> = {
-      name: 20,
-      kitchenType: 50,
-      city: 30,
-      uf: 2,
-      contact: 11
-    };
-
-    for (const key of Object.keys(req.body)) {
-      const value = req.body[key];
-
-      // só valida se for string e se existir
-      if (typeof value === "string" && sizeLimits[key] !== undefined) {
-        if (value.length > sizeLimits[key]) {
-          return res.status(400).json({
-            message: `Field '${key}' exceeds maximum length of ${sizeLimits[key]}.`
-          });
-        }
-      }
-    }
+    const id = Number(req.params.id);
+    const data = updateRestaurantDTO.parse(req.body);
 
     const result = await AppDataSource.transaction(async (manager) => {
-      // ---- BUSCAR RESTAURANTE ----
-      const restaurant = await manager.getRepository(Restaurant).findOne({ where: { id, isActive: true } });
-      if (!restaurant) {
-        throw new Error('NOT_FOUND');
-      }
+      const repoRestaurant = manager.getRepository(Restaurant);
+      const repoOpening = manager.getRepository(RestaurantOpeningHour);
 
-      // ---- ATUALIZAR CAMPOS ----
-      for (const key of Object.keys(req.body)) {
-        if (key !== 'opening') {
-          (restaurant as any)[key] = req.body[key];
-        }
-      }
+      const restaurant = await repoRestaurant.findOne({
+        where: { id, isActive: true },
+      });
 
-      const updatedRestaurant = await manager.getRepository(Restaurant).save(restaurant);
+      if (!restaurant) throw new Error("NOT_FOUND");
 
-      // ---- ATUALIZAR HORÁRIOS ----
-      if (Array.isArray(req.body.opening)) {
-        for (const item of req.body.opening) {
-          if (!item.day || !item.opensAt || !item.closesAt) {
-            throw new Error('MISSING_OPENING_FIELDS');
-          }
+      Object.assign(restaurant, data);
+      delete (restaurant as any).opening;
 
-          const existing = await manager.getRepository(RestaurantOpeningHour).findOne({
+      await repoRestaurant.save(restaurant);
+
+      if (data.opening) {
+        for (const item of data.opening) {
+          const existing = await repoOpening.findOne({
             where: { restaurantId: id, dayOfWeek: item.day },
           });
 
           if (existing) {
             existing.opensAt = item.opensAt;
             existing.closesAt = item.closesAt;
-            await manager.getRepository(RestaurantOpeningHour).save(existing);
+            await repoOpening.save(existing);
           } else {
-            const newHour = manager.getRepository(RestaurantOpeningHour).create({
-              restaurantId: id,
-              dayOfWeek: item.day,
-              opensAt: item.opensAt,
-              closesAt: item.closesAt,
-              isActive: true,
-            });
-            await manager.getRepository(RestaurantOpeningHour).save(newHour);
+            await repoOpening.save(
+              repoOpening.create({
+                restaurantId: id,
+                dayOfWeek: item.day,
+                opensAt: item.opensAt,
+                closesAt: item.closesAt,
+                isActive: true,
+              })
+            );
           }
         }
       }
 
-      return updatedRestaurant;
+      return restaurant;
     });
 
-    // Busca os horários atualizados
-    const restaurantWithHours = await restaurantRepository
+    const repo = AppDataSource.getRepository(Restaurant);
+    const restaurantWithHours = await repo
       .createQueryBuilder("restaurant")
-      .leftJoinAndSelect("restaurant.openingHours", "opening", "opening.isActive = :active", { active: true })
-      .where("restaurant.id = :id", { id: result.id })
+      .leftJoinAndSelect(
+        "restaurant.openingHours",
+        "opening",
+        "opening.isActive = true"
+      )
+      .where("restaurant.id = :id", { id })
       .getOne();
 
-    const formatted = {
+    return res.status(200).json({
       id: restaurantWithHours!.id,
       name: restaurantWithHours!.name,
       kitchenType: restaurantWithHours!.kitchenType,
@@ -287,45 +221,40 @@ export const updateRestaurant = async (req: Request, res: Response): Promise<Res
       contact: restaurantWithHours!.contact,
       createdAt: restaurantWithHours!.createdAt,
       updatedAt: restaurantWithHours!.updatedAt,
-      opening: restaurantWithHours!.openingHours.map(o => ({
+      opening: restaurantWithHours!.openingHours.map((o) => ({
         day: o.dayOfWeek,
         opensAt: o.opensAt,
         closesAt: o.closesAt,
       })),
-    };
-
-    return res.status(200).json(formatted);
+    });
   } catch (error: any) {
     console.error(error);
-    if (error.message === 'NOT_FOUND') {
-      return res.status(404).json({ message: 'Restaurant not found.' });
+
+    if (error.message === "NOT_FOUND") {
+      return res.status(404).json({ message: "Restaurant not found." });
     }
-    if (error.message === 'MISSING_OPENING_FIELDS') {
-      return res.status(400).json({ message: 'Each opening item must have day, opensAt, and closesAt.' });
+
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: "Invalid request body.", issues: error.issues });
     }
-    return res.status(500).json({ message: 'Internal server error.' });
+
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 
-/**
- * @description Deleta um restaurante.
- * @route DELETE /restaurants/:id
- */
 export const deleteRestaurant = async (req: Request, res: Response): Promise<Response> => {
   try {
     const id = parseInt(req.params.id);
 
-    // Busca restaurante ativo
     const restaurant = await restaurantRepository.findOne({ where: { id, isActive: true } });
     if (!restaurant) {
       return res.status(404).json({ message: 'Restaurante não encontrado ou já inativo.' });
     }
 
-    // Soft delete
     restaurant.isActive = false;
     await restaurantRepository.save(restaurant);
 
-    return res.status(204).send(); // No Content
+    return res.status(204).send();
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: 'Internal server error.' });
@@ -337,7 +266,6 @@ export const createSectionOfRestaurant = async (req: Request, res: Response): Pr
     const id = parseInt(req.params.id);
     const { name, description} = req.body;
 
-    // Erro se faltar name ou description
     if ( !name || !description ||
         typeof name !== "string" || typeof description !== "string" ||
         name.length > 30 || description.length > 200 ) {

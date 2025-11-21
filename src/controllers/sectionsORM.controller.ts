@@ -7,7 +7,6 @@ import { Item } from '../models/items.models';
 const sectionRepository = AppDataSource.getRepository(Section);
 const itemRepository = AppDataSource.getRepository(Item);
 
-
 export const getSections = async (req: Request, res: Response): Promise<Response> => {
     try{
         const id = parseInt(req.params.id);
@@ -30,18 +29,14 @@ export const getSections = async (req: Request, res: Response): Promise<Response
 export const updateSectionPartial = async (req: Request, res: Response): Promise<Response> => {
   try {
     const id = parseInt(req.params.id);
-
-    // Somente estes campos podem ser enviados
     const allowedFields = ["name", "description"];
 
-    // ❌ Rejeita campos inválidos
     for (const key of Object.keys(req.body)) {
       if (!allowedFields.includes(key)) {
         return res.status(400).json({ message: "Invalid request body." });
       }
     }
 
-    // ✔ limites de tamanho
     const sizeLimits: Record<string, number> = {
       name: 30,
       description: 200,
@@ -67,7 +62,6 @@ export const updateSectionPartial = async (req: Request, res: Response): Promise
 
       if (!section) throw new Error("NOT_FOUND");
 
-      // ✔ Atualiza somente campos enviados
       for (const key of Object.keys(req.body)) {
         (section as any)[key] = req.body[key];
       }
@@ -91,18 +85,14 @@ export const updateSectionPartial = async (req: Request, res: Response): Promise
 export const updateSectionFull = async (req: Request, res: Response): Promise<Response> => {
   try {
     const id = parseInt(req.params.id);
-
-    // Somente estes campos devem ser aceitos
     const allowedFields = ["name", "description"];
 
-    // ❌ Rejeita campos inválidos
     for (const key of Object.keys(req.body)) {
       if (!allowedFields.includes(key)) {
         return res.status(400).json({ message: "Invalid request body." });
       }
     }
 
-    // ✔ limites de tamanho
     const sizeLimits: Record<string, number> = {
       name: 30,
       description: 200,
@@ -170,7 +160,6 @@ export const createItem = async (req: Request, res: Response): Promise<Response>
         const id = parseInt(req.params.id);
         const { name, description, price } = req.body;
         
-        // Validações
         if (
             !name ||
             !description ||

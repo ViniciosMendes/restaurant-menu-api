@@ -19,7 +19,7 @@ export class RestaurantOpeningHour {
   isActive: boolean;
 
   @ManyToOne(() => Restaurant, (restaurant) => restaurant.openingHours)
-  @JoinColumn({ name: 'restaurant_id' }) // Especifica qual coluna é a chave estrangeira
+  @JoinColumn({ name: 'restaurant_id' })
   restaurant: Restaurant;
 
   @CreateDateColumn({ name: 'createdAt', type: 'timestamp' })

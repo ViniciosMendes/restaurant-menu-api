@@ -1,11 +1,8 @@
-// src/routes/sections.routes.ts
 import { Router } from 'express';
-import { sectionController } from '../controllers/sections.controller';
 import controllerORM from '../controllers/sectionsORM.controller';
 
 const router = Router();
 
-// Define as rotas e linka com o controlador
 router.get('/:id', controllerORM.getSections);
 router.put('/:id', controllerORM.updateSectionFull);
 router.patch('/:id', controllerORM.updateSectionPartial);

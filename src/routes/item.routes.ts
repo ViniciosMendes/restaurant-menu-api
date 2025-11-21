@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { controller } from '../controllers/item.controller';
+import controllerORM from '../controllers/itemsORM.controller';
 
 const router = Router();
 
-router.get("/:id", controller.findItem);
-router.put("/:id", controller.updateFullItem);
-router.patch("/:id", controller.updatePartialItem);
-router.delete("/:id", controller.deleteItem);
+router.get("/:id", controllerORM.findItem);
+router.put("/:id", controllerORM.updateItemFull);
+router.patch("/:id", controllerORM.updateItemPartial);
+router.delete("/:id", controllerORM.deleteItem);
 
 export default router;

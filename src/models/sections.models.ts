@@ -7,7 +7,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from "typeorm";
-import { Restaurant } from "./restaurant.models"; // se existir o model Restaurant
+import { Restaurant } from "./restaurant.models";
 
 @Entity("sections")
 export class Section {
