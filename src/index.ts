@@ -7,6 +7,10 @@ import restaurantRoutes from './routes/restaurant.routes';
 import sectionsRoutes from './routes/sections.routes';
 import itemsRoutes from './routes/item.routes';
 import dotenv from 'dotenv';
+
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './swagger';
+
 dotenv.config();
 
 // Create the main Express application
@@ -18,6 +22,10 @@ const BASE_URL = '/v1'; // From your documentation
 // This middleware is essential for your API to understand JSON
 // It takes the JSON from the req.body and parses it
 app.use(express.json());
+
+// --- ROTA DA DOCUMENTAÇÃO ---
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// ---------------------------
 
 // --- Routes ---
 // Health check route just to see if the API is up
@@ -35,16 +43,62 @@ app.use(`${BASE_URL}/sections`, sectionsRoutes);
 // Connects the URL '/v1/items' to the router file we created
 app.use(`${BASE_URL}/items`, itemsRoutes);
 
-// --- Server Start ---
+
+
+
+
+
+
+// FOI COMENTADO APENAS PARA O TESTE DO SWAGGER, SEM O DOCKER
+// DEVERÁ SER DESCOMENTADO PARA QUE FUNCIONE O DOCKER/BANCO
+
+// // --- Server Start ---
+// AppDataSource.initialize()
+//   .then(() => {
+//     console.log('Data Source has been initialized!');
+//     // Start listening for requests on the defined PORT
+//     app.listen(PORT, () => {
+//       console.log(`[SERVER] Running on http://localhost:${PORT}`);
+//     });
+//   })
+//   .catch((err) => {
+//     console.error('Error during Data Source initialization:', err);
+//     process.exit(1); // Encerra a aplicação se a conexão com o DB falhar
+//   });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// FOI CRIADO APENAS PARA O TESTE DO SWAGGER SEM O DOCKER
+// DEVERÁ SER EXCLUIDO QUANDO DOCKER/BANCO FOR USADO
+
+// --- ALTERAÇÃO AQUI ---
+// Iniciamos o servidor PRIMEIRO, independentemente do banco
+app.listen(PORT, () => {
+  console.log(`\n=========================================================`);
+  console.log(`[DOCS] Swagger disponível em: http://localhost:${PORT}/api-docs`);
+  console.log(`=========================================================\n`);
+});
+
+// Tentamos conectar no banco em segundo plano apenas para logar o erro, sem matar o processo
 AppDataSource.initialize()
   .then(() => {
-    console.log('Data Source has been initialized!');
-    // Start listening for requests on the defined PORT
-    app.listen(PORT, () => {
-      console.log(`[SERVER] Running on http://localhost:${PORT}`);
-    });
+    console.log('[DB] Banco de dados conectado com sucesso!');
   })
   .catch((err) => {
-    console.error('Error during Data Source initialization:', err);
-    process.exit(1); // Encerra a aplicação se a conexão com o DB falhar
+    console.error('\n[AVISO] Banco de dados não conectado.');
+    console.error('O Swagger funcionará, mas testar as rotas (Try it out) dará erro.\n');
   });
