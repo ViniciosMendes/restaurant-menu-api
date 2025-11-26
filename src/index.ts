@@ -44,61 +44,20 @@ app.use(`${BASE_URL}/sections`, sectionsRoutes);
 app.use(`${BASE_URL}/items`, itemsRoutes);
 
 
+// FOI COMENTADO APENAS PARA O TESTE DO SWAGGER, SEM O DOCKER
+// DEVERÁ SER DESCOMENTADO PARA QUE FUNCIONE O DOCKER/BANCO
 
-
-
-
-
-// // FOI COMENTADO APENAS PARA O TESTE DO SWAGGER, SEM O DOCKER
-// // DEVERÁ SER DESCOMENTADO PARA QUE FUNCIONE O DOCKER/BANCO
-
-// // --- Server Start ---
-// AppDataSource.initialize()
-//   .then(() => {
-//     console.log('Data Source has been initialized!');
-//     // Start listening for requests on the defined PORT
-//     app.listen(PORT, () => {
-//       console.log(`[SERVER] Running on http://localhost:${PORT}`);
-//     });
-//   })
-//   .catch((err) => {
-//     console.error('Error during Data Source initialization:', err);
-//     process.exit(1); // Encerra a aplicação se a conexão com o DB falhar
-//   });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// FOI CRIADO APENAS PARA O TESTE DO SWAGGER SEM O DOCKER
-// DEVERÁ SER EXCLUIDO QUANDO DOCKER/BANCO FOR USADO
-
-// // --- ALTERAÇÃO AQUI ---
-// // Iniciamos o servidor PRIMEIRO, independentemente do banco
-app.listen(PORT, () => {
-  console.log(`\n=========================================================`);
-  console.log(`[DOCS] Swagger disponível em: http://localhost:${PORT}/api-docs`);
-  console.log(`=========================================================\n`);
-});
-
-// // Tentamos conectar no banco em segundo plano apenas para logar o erro, sem matar o processo
-// AppDataSource.initialize()
-//   .then(() => {
-//     console.log('[DB] Banco de dados conectado com sucesso!');
-//   })
-//   .catch((err) => {
-//     console.error('\n[AVISO] Banco de dados não conectado.');
-//     console.error('O Swagger funcionará, mas testar as rotas (Try it out) dará erro.\n');
-//   });
+// --- Server Start ---
+AppDataSource.initialize()
+  .then(() => {
+    console.log('Data Source has been initialized!');
+    // Start listening for requests on the defined PORT
+    app.listen(PORT, () => {
+      console.log(`[SERVER] Running on http://localhost:${PORT}`);
+      console.log(`[DOCS] Swagger disponível em: http://localhost:${PORT}/api-docs`);
+    });
+  })
+  .catch((err) => {
+    console.error('Error during Data Source initialization:', err);
+    process.exit(1); // Encerra a aplicação se a conexão com o DB falhar
+  });

@@ -106,7 +106,7 @@ const options = {
         get: {
           tags: ['Restaurants'],
           summary: 'Obter restaurante por ID',
-          parameters: [{ in: 'path',Kvname: 'id', schema: { type: 'integer' }, required: true, description: 'ID do restaurante' }],
+          parameters: [{ in: 'path', name: 'id', schema: { type: 'integer' }, required: true, description: 'ID do restaurante' }],
           responses: {
             200: { description: 'Restaurante encontrado.', content: { 'application/json': { schema: { $ref: '#/components/schemas/Restaurant' } } } },
             404: { description: 'Restaurante não encontrado.' },
