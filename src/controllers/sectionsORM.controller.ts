@@ -20,7 +20,12 @@ export const getSections = async (req: Request, res: Response): Promise<Response
         if(!sections || sections.length === 0)
             return res.status(404).json({ message: 'Sections not found.' });
 
-        return res.status(200).json(sections);
+        const formatted = sections.map(s => ({
+            section_id: s.section_id,
+            name: s.name,
+            description: s.description,
+        }));
+        return res.status(200).json(formatted);
     }catch(error){
         return res.status(500).json({ message: 'Internal server error.' });
     }
@@ -70,7 +75,12 @@ export const updateSectionPartial = async (req: Request, res: Response): Promise
       return updated;
     });
 
-    return res.status(200).json(result);
+    return res.status(200).json({
+        section_id: result.section_id,
+        name: result.name,
+        description: result.description,
+        restaurantId: result.restaurant_id
+    });
 
   } catch (error: any) {
     console.error(error);
@@ -126,7 +136,12 @@ export const updateSectionFull = async (req: Request, res: Response): Promise<Re
       return updated;
     });
 
-    return res.status(200).json(result);
+    return res.status(200).json({
+        section_id: result.section_id,
+        name: result.name,
+        description: result.description,
+        restaurantId: result.restaurant_id
+    });
 
   } catch (error: any) {
     console.error(error);
@@ -190,9 +205,7 @@ export const createItem = async (req: Request, res: Response): Promise<Response>
                 section_id: item.section_id,
                 name: item.name,
                 description: item.description,
-                price: item.price,
-                createdAt: item.createdAt,
-                updatedAt: item.updatedAt,
+                price: item.price
             }
         });
     }catch(error){
@@ -213,7 +226,14 @@ export const findAllItemsOfSection = async (req: Request, res: Response): Promis
         if(!items || items.length === 0)
             return res.status(404).json({ message: 'Items not found.' });
 
-        return res.status(200).json(items);
+        const formatted = items.map(i => ({
+            item_id: i.item_id,
+            name: i.name,
+            description: i.description,
+            price: i.price,
+            section_id: i.section_id,
+        }));
+        return res.status(200).json(formatted);
     }catch(error){
         return res.status(500).json({ message: 'Internal server error.' });
     }

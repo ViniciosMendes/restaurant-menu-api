@@ -34,8 +34,6 @@ export const getRestaurants = async (req: Request, res: Response): Promise<Respo
       city: r.city,
       uf: r.uf,
       contact: r.contact,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
       opening: r.openingHours.map(o => ({
         day: o.dayOfWeek,
         opensAt: o.opensAt,
@@ -76,8 +74,6 @@ export const getRestaurantById = async (req: Request, res: Response): Promise<Re
       city: restaurant.city,
       uf: restaurant.uf,
       contact: restaurant.contact,
-      createdAt: restaurant.createdAt,
-      updatedAt: restaurant.updatedAt,
       opening: restaurant.openingHours.map(o => ({
         day: o.dayOfWeek,
         opensAt: o.opensAt,
@@ -131,8 +127,6 @@ export const createRestaurant = async (req: Request, res: Response): Promise<Res
         city: result.savedRestaurant.city,
         uf: result.savedRestaurant.uf,
         contact: result.savedRestaurant.contact,
-        createdAt: result.savedRestaurant.createdAt,
-        updatedAt: result.savedRestaurant.updatedAt,
       },
       opening: result.openingRecords.map((o) => ({
         day: o.dayOfWeek,
@@ -219,8 +213,6 @@ export const updateRestaurant = async (req: Request, res: Response): Promise<Res
       city: restaurantWithHours!.city,
       uf: restaurantWithHours!.uf,
       contact: restaurantWithHours!.contact,
-      createdAt: restaurantWithHours!.createdAt,
-      updatedAt: restaurantWithHours!.updatedAt,
       opening: restaurantWithHours!.openingHours.map((o) => ({
         day: o.dayOfWeek,
         opensAt: o.opensAt,
@@ -274,6 +266,14 @@ export const createSectionOfRestaurant = async (req: Request, res: Response): Pr
       });
     }
 
+    const restaurant = await restaurantRepository.findOne({
+      where: { id, isActive: true }
+    });
+
+    if (!restaurant) {
+      return res.status(400).json({ message: "Invalid request body." });
+    }
+
     const section = await sectionRepository.save({
       restaurant_id: id,
       name,
@@ -284,9 +284,7 @@ export const createSectionOfRestaurant = async (req: Request, res: Response): Pr
         section_id: section.section_id, 
         name: section.name,
         description: section.description,
-        restaurantId: section.restaurant_id,
-        createdAt: section.createdAt,
-        updatedAt: section.updatedAt,
+        restaurantId: section.restaurant_id
       }
     });
 
@@ -302,7 +300,10 @@ export const findAllSectionsOfRestaurant = async (req: Request, res: Response): 
 
     const sections = await sectionRepository
       .createQueryBuilder("section")
+      .innerJoin("section.restaurant", "restaurant")
       .where("section.isActive = :active AND section.restaurant_id = :id", { active: true, id })
+      .andWhere("restaurant.isActive = :restaurantActive", { restaurantActive: true })
+      .orderBy("section.section_id", "ASC")
       .getMany();
 
     if(!sections || sections.length === 0){

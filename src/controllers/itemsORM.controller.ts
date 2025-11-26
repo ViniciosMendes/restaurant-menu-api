@@ -13,7 +13,13 @@ export const findItem = async (req: Request, res: Response): Promise<Response> =
         if(!item)
             return res.status(404).json({ message: 'Item not found.' });
 
-        return res.status(200).json(item);
+        return res.status(200).json({
+            item_id: item.item_id,
+            name: item.name,
+            description: item.description,
+            price: item.price,
+            section_id: item.section_id,
+        });
     }catch(error){
         return res.status(500).json({ message: 'Internal server error.' });
     }
@@ -71,7 +77,13 @@ export const updateItemPartial = async (req: Request, res: Response): Promise<Re
       return await repo.save(item);
     });
 
-    return res.status(200).json(result);
+    return res.status(200).json({
+        item_id: result.item_id,
+        name: result.name,
+        description: result.description,
+        price: result.price,
+        section_id: result.section_id,
+    });
 
   } catch (error: any) {
     console.error(error);
@@ -132,7 +144,13 @@ export const updateItemFull = async (req: Request, res: Response): Promise<Respo
       return await repo.save(item);
     });
 
-    return res.status(200).json(result);
+    return res.status(200).json({
+        item_id: result.item_id,
+        name: result.name,
+        description: result.description,
+        price: result.price,
+        section_id: result.section_id,
+    });
 
   } catch (error: any) {
     console.error(error);

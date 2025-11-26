@@ -71,6 +71,7 @@ const options = {
           responses: {
             200: { description: 'Lista de restaurantes retornada com sucesso.', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Restaurant' } } } } },
             404: { description: 'Nenhum restaurante encontrado.' },
+            500: { description: 'Erro interno do servidor.' },
           },
         },
         post: {
@@ -99,6 +100,7 @@ const options = {
           responses: {
             201: { description: 'Restaurante criado com sucesso.' },
             400: { description: 'Dados inválidos.' },
+            500: { description: 'Erro interno do servidor.' },
           },
         },
       },
@@ -110,20 +112,62 @@ const options = {
           responses: {
             200: { description: 'Restaurante encontrado.', content: { 'application/json': { schema: { $ref: '#/components/schemas/Restaurant' } } } },
             404: { description: 'Restaurante não encontrado.' },
+            500: { description: 'Erro interno do servidor.' },
           },
         },
         patch: {
           tags: ['Restaurants'],
           summary: 'Atualizar restaurante parcialmente',
-          parameters: [{ in: 'path', name: 'id', schema: { type: 'integer' }, required: true }],
-          requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/Restaurant' } } } },
-          responses: { 200: { description: 'Atualizado com sucesso.' }, 404: { description: 'Não encontrado.' } },
+          parameters: [
+            {
+              in: 'path',
+              name: 'id',
+              schema: { type: 'integer' },
+              required: true
+            }
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string' },
+                    kitchenType: { type: 'string' },
+                    city: { type: 'string' },
+                    uf: { type: 'string' },
+                    contact: { type: 'string' },
+                    opening: {
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/OpeningHour' }
+                    }
+                  }
+                },
+                example: {
+                  city: "Campinas",
+                  uf: "SP",
+                  contact: "11123456789",
+                  opening: [
+                    { day: "friday", opensAt: "19:00", closesAt: "23:30" }
+                  ]
+                }
+              }
+            }
+          },
+          responses: {
+            200: { description: 'Atualizado com sucesso.' },
+            400: { description: 'Dados inválidos.' },
+            404: { description: 'Não encontrado.' },
+            500: { description: 'Erro interno do servidor.' }
+          
+          }
         },
         delete: {
           tags: ['Restaurants'],
           summary: 'Deletar (desativar) restaurante',
           parameters: [{ in: 'path', name: 'id', schema: { type: 'integer' }, required: true }],
-          responses: { 204: { description: 'Deletado com sucesso.' }, 404: { description: 'Não encontrado.' } },
+          responses: { 204: { description: 'Deletado com sucesso.' }, 404: { description: 'Não encontrado.' }, 500: { description: 'Erro interno do servidor.' } },
         },
       },
       '/restaurants/{id}/sections': {
@@ -140,12 +184,30 @@ const options = {
           summary: 'Criar seção para um restaurante',
           parameters: [{ in: 'path', name: 'id', schema: { type: 'integer' }, required: true }],
           requestBody: {
-            content: { 'application/json': { schema: { type: 'object', properties: { name: { type: 'string' }, description: { type: 'string' } } } } }
+            content: { 
+              'application/json': { 
+                schema: { 
+                  type: 'object', 
+                  properties: {
+                    name: { type: 'string' }, 
+                    description: { type: 'string' } 
+                  } 
+                }, 
+                example: {
+                  name: "Pizzas Salgadas",
+                  description: "Deliciosas pizzas para sua refeição."
+                } 
+              } 
+            }
           },
-          responses: { 201: { description: 'Seção criada.' } },
+          responses: { 
+          201: { description: 'Seção criada.', },
+          400: { description: 'Dados inválidos.' },
+          500: { description: 'Erro interno do servidor.' }
+          },
         },
       },
-      
+
       // --- SECTIONS ---
       '/sections/{id}': {
         get: {
