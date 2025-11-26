@@ -62,20 +62,15 @@ export const updateSectionPartial = async (req: Request, res: Response): Promise
       }
     }
 
-    const restaurant = await restaurantRepository.findOne({
-      where: { id, isActive: true }
-    });
-
-    if (!restaurant) throw new Error("NOT_FOUND");
-
     const result = await AppDataSource.transaction(async (manager) => {
       const repo = manager.getRepository(Section);
 
-      const section = await repo.findOne({
-        where: { section_id: id, isActive: true },
-      });
+      const section = await sectionRepository.findOne({
+          where: { section_id: id, isActive: true },
+          relations: ["restaurant"]  // importante para acessar section.restaurant
+        });
 
-      if (!section) throw new Error("NOT_FOUND");
+      if (!section || !section.restaurant || !section.restaurant.isActive) throw new Error("NOT_FOUND");
 
       for (const key of Object.keys(req.body)) {
         (section as any)[key] = req.body[key];
@@ -129,20 +124,15 @@ export const updateSectionFull = async (req: Request, res: Response): Promise<Re
       }
     }
 
-    const restaurant = await restaurantRepository.findOne({
-      where: { id, isActive: true }
-    });
-
-    if (!restaurant) throw new Error("NOT_FOUND");
-
     const result = await AppDataSource.transaction(async (manager) => {
       const repo = manager.getRepository(Section);
 
-      const section = await repo.findOne({
-        where: { section_id: id, isActive: true },
-      });
+      const section = await sectionRepository.findOne({
+          where: { section_id: id, isActive: true },
+          relations: ["restaurant"]  // importante para acessar section.restaurant
+        });
 
-      if (!section) throw new Error("NOT_FOUND");
+      if (!section || !section.restaurant || !section.restaurant.isActive) throw new Error("NOT_FOUND");
 
       // ✔ PUT = sobrescreve tudo
       section.name = req.body.name ?? "";
@@ -172,12 +162,12 @@ export const updateSectionFull = async (req: Request, res: Response): Promise<Re
 export const deleteSections = async (req: Request, res: Response): Promise<Response> => {
     try{
         const id = parseInt(req.params.id);
-        const section = await sectionRepository.findOneBy({ section_id: id, isActive: true });
-        const restaurant = await restaurantRepository.findOne({
-          where: { id, isActive: true }
+        const section = await sectionRepository.findOne({
+          where: { section_id: id, isActive: true },
+          relations: ["restaurant"]
         });
 
-        if(!section || !restaurant)
+        if(!section || !section.restaurant || !section.restaurant.isActive)
             return res.status(404).json({ message: 'Section not found.' });
 
         section.isActive = false;
@@ -194,14 +184,13 @@ export const createItem = async (req: Request, res: Response): Promise<Response>
         const id = parseInt(req.params.id);
         const { name, description, price } = req.body;
         
-        const restaurant = await restaurantRepository.findOne({
-          where: { id, isActive: true }
-        });
-         const section = await sectionRepository.findOne({
+        const section = await sectionRepository.findOne({
           where: { section_id: id, isActive: true },
+          relations: ["restaurant"]  // importante para acessar section.restaurant
         });
 
-        if (!restaurant || !section ||
+        if (!section || !section.restaurant || 
+            !section.restaurant.isActive ||
             !name ||
             !description ||
             price === undefined ||

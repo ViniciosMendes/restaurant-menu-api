@@ -1,16 +1,26 @@
 import { Request, Response } from 'express';
 import { AppDataSource } from '../data-source';
+import { Restaurant } from '../models/restaurant.models';
+import { Section } from '../models/sections.models';
 import { Item } from '../models/items.models';
 
 const itemRepository = AppDataSource.getRepository(Item);
+const sectionRepository = AppDataSource.getRepository(Section);
+const restaurantRepository = AppDataSource.getRepository(Restaurant);
 
 export const findItem = async (req: Request, res: Response): Promise<Response> => { 
     try{
         const id = parseInt(req.params.id);
 
         const item = await itemRepository.findOneBy({ item_id: id, isActive: true });
+        const restaurant = await restaurantRepository.findOne({
+          where: { id, isActive: true }
+        });
+        const section = await sectionRepository.findOne({
+          where: { section_id: item?.section_id, isActive: true },
+        });
 
-        if(!item)
+        if(!restaurant || !section || !item)
             return res.status(404).json({ message: 'Item not found.' });
 
         return res.status(200).json({
@@ -64,7 +74,14 @@ export const updateItemPartial = async (req: Request, res: Response): Promise<Re
         where: { item_id: id, isActive: true },
       });
 
-      if (!item) throw new Error("NOT_FOUND");
+      const restaurant = await restaurantRepository.findOne({
+        where: { id, isActive: true }
+      });
+      const section = await sectionRepository.findOne({
+        where: { section_id: item?.section_id, isActive: true },
+      });
+
+      if (!item || !restaurant || !section) throw new Error("NOT_FOUND");
 
       for (const key of Object.keys(req.body)) {
         if (key === "price") {
@@ -133,7 +150,14 @@ export const updateItemFull = async (req: Request, res: Response): Promise<Respo
         where: { item_id: id, isActive: true },
       });
 
-      if (!item) throw new Error("NOT_FOUND");
+      const restaurant = await restaurantRepository.findOne({
+        where: { id, isActive: true }
+      });
+      const section = await sectionRepository.findOne({
+        where: { section_id: item?.section_id, isActive: true },
+      });
+
+      if (!restaurant || !section || !item) throw new Error("NOT_FOUND");
 
       item.name = req.body.name ?? "";
       item.description = req.body.description ?? "";
@@ -165,8 +189,14 @@ export const deleteItem = async (req: Request, res: Response): Promise<Response>
     try{
         const id = parseInt(req.params.id);
         const item = await itemRepository.findOneBy({ item_id: id, isActive: true });
+        const restaurant = await restaurantRepository.findOne({
+          where: { id, isActive: true }
+        });
+        const section = await sectionRepository.findOne({
+          where: { section_id: item?.section_id, isActive: true },
+        });
 
-        if(!item){
+        if(!item || !restaurant || !section){
             return res.status(404).json({ message: 'Item not found.' });
         }
 
