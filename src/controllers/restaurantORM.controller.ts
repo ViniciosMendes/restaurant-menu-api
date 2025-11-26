@@ -2,12 +2,14 @@ import { Request, Response } from 'express';
 import { AppDataSource } from '../data-source';
 import { Restaurant } from '../models/restaurant.models';
 import { Section } from '../models/sections.models';
+import { Item } from '../models/items.models';
 import { RestaurantOpeningHour } from '../models/restaurantopeninghour.models';
 import { createRestaurantDTO, updateRestaurantDTO } from "../dtos/restaurant.dtos";
 import { z } from "zod";
 
 const restaurantRepository = AppDataSource.getRepository(Restaurant);
 const sectionRepository = AppDataSource.getRepository(Section);
+const itemRepository = AppDataSource.getRepository(Item);
 
 export const getRestaurants = async (req: Request, res: Response): Promise<Response> => {
   try {
@@ -243,8 +245,25 @@ export const deleteRestaurant = async (req: Request, res: Response): Promise<Res
       return res.status(404).json({ message: 'Restaurante não encontrado ou já inativo.' });
     }
 
+    // 2. Desativar o restaurante
     restaurant.isActive = false;
     await restaurantRepository.save(restaurant);
+
+    // 3. Desativar todas as seções do restaurante
+    await sectionRepository
+      .createQueryBuilder()
+      .update()
+      .set({ isActive: false })
+      .where("restaurant_id = :id", { id })
+      .execute();
+
+    // 4. Desativar todos os itens das seções do restaurante
+    await itemRepository
+      .createQueryBuilder()
+      .update()
+      .set({ isActive: false })
+      .where("section_id IN (SELECT section_id FROM sections WHERE restaurant_id = :id)", { id })
+      .execute();
 
     return res.status(204).send();
   } catch (error) {

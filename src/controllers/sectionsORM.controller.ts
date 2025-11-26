@@ -15,9 +15,7 @@ export const getSections = async (req: Request, res: Response): Promise<Response
 
         const sections = await sectionRepository
         .createQueryBuilder("sections")
-        .innerJoin("sections.restaurant", "restaurant")
         .where("sections.isActive = :active AND sections.section_id = :id", { active: true, id, })
-        .andWhere("restaurant.isActive = :restaurantActive", { restaurantActive: true })
         .orderBy("sections.section_id", "ASC")
         .getMany();
 
@@ -66,11 +64,10 @@ export const updateSectionPartial = async (req: Request, res: Response): Promise
       const repo = manager.getRepository(Section);
 
       const section = await sectionRepository.findOne({
-          where: { section_id: id, isActive: true },
-          relations: ["restaurant"]  // importante para acessar section.restaurant
+          where: { section_id: id, isActive: true } 
         });
 
-      if (!section || !section.restaurant || !section.restaurant.isActive) throw new Error("NOT_FOUND");
+      if (!section) throw new Error("NOT_FOUND");
 
       for (const key of Object.keys(req.body)) {
         (section as any)[key] = req.body[key];
@@ -128,11 +125,10 @@ export const updateSectionFull = async (req: Request, res: Response): Promise<Re
       const repo = manager.getRepository(Section);
 
       const section = await sectionRepository.findOne({
-          where: { section_id: id, isActive: true },
-          relations: ["restaurant"]  // importante para acessar section.restaurant
+          where: { section_id: id, isActive: true }
         });
 
-      if (!section || !section.restaurant || !section.restaurant.isActive) throw new Error("NOT_FOUND");
+      if (!section) throw new Error("NOT_FOUND");
 
       // ✔ PUT = sobrescreve tudo
       section.name = req.body.name ?? "";
@@ -163,11 +159,10 @@ export const deleteSections = async (req: Request, res: Response): Promise<Respo
     try{
         const id = parseInt(req.params.id);
         const section = await sectionRepository.findOne({
-          where: { section_id: id, isActive: true },
-          relations: ["restaurant"]
+          where: { section_id: id, isActive: true }
         });
 
-        if(!section || !section.restaurant || !section.restaurant.isActive)
+        if(!section)
             return res.status(404).json({ message: 'Section not found.' });
 
         section.isActive = false;
@@ -185,12 +180,10 @@ export const createItem = async (req: Request, res: Response): Promise<Response>
         const { name, description, price } = req.body;
         
         const section = await sectionRepository.findOne({
-          where: { section_id: id, isActive: true },
-          relations: ["restaurant"]  // importante para acessar section.restaurant
+          where: { section_id: id, isActive: true }
         });
 
-        if (!section || !section.restaurant || 
-            !section.restaurant.isActive ||
+        if (!section ||
             !name ||
             !description ||
             price === undefined ||
@@ -234,11 +227,7 @@ export const findAllItemsOfSection = async (req: Request, res: Response): Promis
 
         const items = await itemRepository
         .createQueryBuilder("items")
-        .innerJoin("items.section", "section")
-        .innerJoin("section.restaurant", "restaurant")
         .where("items.isActive = :active AND items.section_id = :id", { active: true, id, })
-        .andWhere("section.isActive = :sectionActive", { sectionActive: true })
-        .andWhere("restaurant.isActive = :restaurantActive", { restaurantActive: true })
         .orderBy("items.item_id", "ASC")
         .getMany();
 
