@@ -49,8 +49,8 @@ app.use(`${BASE_URL}/items`, itemsRoutes);
 
 
 
-// FOI COMENTADO APENAS PARA O TESTE DO SWAGGER, SEM O DOCKER
-// DEVERÁ SER DESCOMENTADO PARA QUE FUNCIONE O DOCKER/BANCO
+// // FOI COMENTADO APENAS PARA O TESTE DO SWAGGER, SEM O DOCKER
+// // DEVERÁ SER DESCOMENTADO PARA QUE FUNCIONE O DOCKER/BANCO
 
 // // --- Server Start ---
 // AppDataSource.initialize()
@@ -85,20 +85,20 @@ app.use(`${BASE_URL}/items`, itemsRoutes);
 // FOI CRIADO APENAS PARA O TESTE DO SWAGGER SEM O DOCKER
 // DEVERÁ SER EXCLUIDO QUANDO DOCKER/BANCO FOR USADO
 
-// --- ALTERAÇÃO AQUI ---
-// Iniciamos o servidor PRIMEIRO, independentemente do banco
+// // --- ALTERAÇÃO AQUI ---
+// // Iniciamos o servidor PRIMEIRO, independentemente do banco
 app.listen(PORT, () => {
   console.log(`\n=========================================================`);
   console.log(`[DOCS] Swagger disponível em: http://localhost:${PORT}/api-docs`);
   console.log(`=========================================================\n`);
 });
 
-// Tentamos conectar no banco em segundo plano apenas para logar o erro, sem matar o processo
-AppDataSource.initialize()
-  .then(() => {
-    console.log('[DB] Banco de dados conectado com sucesso!');
-  })
-  .catch((err) => {
-    console.error('\n[AVISO] Banco de dados não conectado.');
-    console.error('O Swagger funcionará, mas testar as rotas (Try it out) dará erro.\n');
-  });
+// // Tentamos conectar no banco em segundo plano apenas para logar o erro, sem matar o processo
+// AppDataSource.initialize()
+//   .then(() => {
+//     console.log('[DB] Banco de dados conectado com sucesso!');
+//   })
+//   .catch((err) => {
+//     console.error('\n[AVISO] Banco de dados não conectado.');
+//     console.error('O Swagger funcionará, mas testar as rotas (Try it out) dará erro.\n');
+//   });
