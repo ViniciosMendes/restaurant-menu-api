@@ -1,9 +1,11 @@
 // src/repositories/section.repository.ts
 import { Request, Response } from 'express';
 import { AppDataSource } from '../data-source';
+import { Restaurant } from '../models/restaurant.models';
 import { Section } from '../models/sections.models';
 import { Item } from '../models/items.models';
 
+const restaurantRepository = AppDataSource.getRepository(Restaurant);
 const sectionRepository = AppDataSource.getRepository(Section);
 const itemRepository = AppDataSource.getRepository(Item);
 
@@ -13,7 +15,9 @@ export const getSections = async (req: Request, res: Response): Promise<Response
 
         const sections = await sectionRepository
         .createQueryBuilder("sections")
+        .innerJoin("sections.restaurant", "restaurant")
         .where("sections.isActive = :active AND sections.section_id = :id", { active: true, id, })
+        .andWhere("restaurant.isActive = :restaurantActive", { restaurantActive: true })
         .orderBy("sections.section_id", "ASC")
         .getMany();
 
@@ -57,6 +61,12 @@ export const updateSectionPartial = async (req: Request, res: Response): Promise
         }
       }
     }
+
+    const restaurant = await restaurantRepository.findOne({
+      where: { id, isActive: true }
+    });
+
+    if (!restaurant) throw new Error("NOT_FOUND");
 
     const result = await AppDataSource.transaction(async (manager) => {
       const repo = manager.getRepository(Section);
@@ -119,6 +129,12 @@ export const updateSectionFull = async (req: Request, res: Response): Promise<Re
       }
     }
 
+    const restaurant = await restaurantRepository.findOne({
+      where: { id, isActive: true }
+    });
+
+    if (!restaurant) throw new Error("NOT_FOUND");
+
     const result = await AppDataSource.transaction(async (manager) => {
       const repo = manager.getRepository(Section);
 
@@ -157,8 +173,11 @@ export const deleteSections = async (req: Request, res: Response): Promise<Respo
     try{
         const id = parseInt(req.params.id);
         const section = await sectionRepository.findOneBy({ section_id: id, isActive: true });
+        const restaurant = await restaurantRepository.findOne({
+          where: { id, isActive: true }
+        });
 
-        if(!section)
+        if(!section || !restaurant)
             return res.status(404).json({ message: 'Section not found.' });
 
         section.isActive = false;
@@ -175,7 +194,14 @@ export const createItem = async (req: Request, res: Response): Promise<Response>
         const id = parseInt(req.params.id);
         const { name, description, price } = req.body;
         
-        if (
+        const restaurant = await restaurantRepository.findOne({
+          where: { id, isActive: true }
+        });
+         const section = await sectionRepository.findOne({
+          where: { section_id: id, isActive: true },
+        });
+
+        if (!restaurant || !section ||
             !name ||
             !description ||
             price === undefined ||
@@ -219,7 +245,11 @@ export const findAllItemsOfSection = async (req: Request, res: Response): Promis
 
         const items = await itemRepository
         .createQueryBuilder("items")
+        .innerJoin("items.section", "section")
+        .innerJoin("section.restaurant", "restaurant")
         .where("items.isActive = :active AND items.section_id = :id", { active: true, id, })
+        .andWhere("section.isActive = :sectionActive", { sectionActive: true })
+        .andWhere("restaurant.isActive = :restaurantActive", { restaurantActive: true })
         .orderBy("items.item_id", "ASC")
         .getMany();
 
