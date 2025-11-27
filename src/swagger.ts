@@ -177,6 +177,8 @@ const options = {
           parameters: [{ in: 'path', name: 'id', schema: { type: 'integer' }, required: true }],
           responses: {
             200: { content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Section' } } } } },
+            404: { description: 'Nenhuma seção encontrada.' },
+            500: { description: 'Erro interno do servidor.' }
           },
         },
         post: {
@@ -214,44 +216,106 @@ const options = {
             tags: ['Sections'],
             summary: 'Obter seção por ID',
             parameters: [{ in: 'path', name: 'id', schema: { type: 'integer' }, required: true }],
-            responses: { 200: { description: 'Sucesso.' }, 404: { description: 'Não encontrado.' } }
+            responses: { 200: { description: 'Sucesso.', content: { 'application/json': { schema: { $ref: '#/components/schemas/Section'  } } } }, 404: { description: 'Não encontrado.' }, 500: { description: 'Erro interno do servidor.' } }
         },
         put: {
             tags: ['Sections'],
             summary: 'Atualizar seção (Full)',
             parameters: [{ in: 'path', name: 'id', schema: { type: 'integer' }, required: true }],
-            requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/Section' } } } },
-            responses: { 200: { description: 'Atualizado.' } }
+            requestBody: { 
+              content: { 'application/json': { 
+                schema: {
+                  type: 'object',  properties: { 
+                    name: { type: 'string' },  
+                    description: { type: 'string' } 
+                  } 
+                }, 
+                example: {
+                  name: "Pizzas Doces",
+                  description: "Pizzas doces deliciosas."
+                }
+              } 
+            },
+
+            responses: { 
+              200: { description: 'Atualizado.' },
+              400: { description: 'Dados inválidos.' },
+              404: { description: 'Não encontrado.' },
+              500: { description: 'Erro interno do servidor.' }
+            }
+          }
         },
         patch: {
             tags: ['Sections'],
             summary: 'Atualizar seção (Parcial)',
             parameters: [{ in: 'path', name: 'id', schema: { type: 'integer' }, required: true }],
-            requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/Section' } } } },
-            responses: { 200: { description: 'Atualizado.' } }
+            requestBody: { 
+              content: { 'application/json': { 
+                schema: {
+                  type: 'object',  properties: { 
+                    name: { type: 'string' },  
+                    description: { type: 'string' } 
+                  } 
+                }, 
+                example: {
+                  name: "Pizzas Doces",
+                  description: "Pizzas doces deliciosas e irresistíveis."
+                }
+              } 
+            },
+
+            responses: { 
+              200: { description: 'Atualizado.' },
+              400: { description: 'Dados inválidos.' },
+              404: { description: 'Não encontrado.' },
+              500: { description: 'Erro interno do servidor.' }
+            }
+          }
         },
         delete: {
             tags: ['Sections'],
             summary: 'Deletar seção',
             parameters: [{ in: 'path', name: 'id', schema: { type: 'integer' }, required: true }],
-            responses: { 204: { description: 'Deletado.' } }
+            responses: { 
+              204: { description: 'Deletado.' },
+              404: { description: 'Não encontrado.' },
+              500: { description: 'Erro interno do servidor.' }
+          }
         }
       },
       '/sections/{id}/items': {
         get: {
-            tags: ['Sections'],
-            summary: 'Listar itens de uma seção',
-            parameters: [{ in: 'path', name: 'id', schema: { type: 'integer' }, required: true }],
-            responses: { 200: { content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Item' } } } } } }
+          tags: ['Sections'],
+          summary: 'Listar itens de uma seção',
+          responses: {
+            200: { description: 'Lista de itens retornada com sucesso.', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Item' } } } } },
+            404: { description: 'Nenhum item encontrado.' },
+            500: { description: 'Erro interno do servidor.' },
+          },
         },
         post: {
             tags: ['Sections'],
             summary: 'Criar item em uma seção',
             parameters: [{ in: 'path', name: 'id', schema: { type: 'integer' }, required: true }],
             requestBody: {
-                content: { 'application/json': { schema: { type: 'object', properties: { name: { type: 'string' }, description: { type: 'string' }, price: { type: 'number' } } } } }
+                content: { 
+                  'application/json': { 
+                    schema: { 
+                      type: 'object', properties: { 
+                        name: { type: 'string' }, 
+                        description: { type: 'string' }, 
+                        price: { type: 'number' } 
+                      } 
+                    },
+                    example: {
+                      name: "Pizza Casadinho",
+                      description: "Metade chocolate preto, metade chocolate branco",
+                      price: 39.90
+                    }
+                  } 
+                }
             },
-            responses: { 201: { description: 'Item criado.' } }
+            responses: { 201: { description: 'Item criado.' }, 400: { description: 'Dados inválidos.' }, 500: { description: 'Erro interno do servidor.' } }
         }
       },
 
@@ -261,27 +325,69 @@ const options = {
             tags: ['Items'],
             summary: 'Obter item por ID',
             parameters: [{ in: 'path', name: 'id', schema: { type: 'integer' }, required: true }],
-            responses: { 200: { description: 'Sucesso.' } }
+            responses: { 
+              200: { description: 'Sucesso.', content: { 'application/json': { schema: { $ref: '#/components/schemas/Item'  } } } }, 
+              404: { description: 'Não encontrado.' },
+              500: { description: 'Erro interno do servidor.' }
+            }
         },
         put: {
             tags: ['Items'],
             summary: 'Atualizar item (Full)',
             parameters: [{ in: 'path', name: 'id', schema: { type: 'integer' }, required: true }],
-            requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/Item' } } } },
-            responses: { 200: { description: 'Atualizado.' } }
+            requestBody: { 
+              content: { 
+                'application/json': { 
+                  schema: {
+                    type: 'object',  properties: { 
+                      item_id: { type: 'integer' },
+                      name: { type: 'string' },  
+                      description: { type: 'string' }, 
+                      price: { type: 'number' },
+                      section_id: { type: 'integer' }
+                    } 
+                  }, 
+                  example: {
+                    name: "Pizza de Brigadeiro",
+                    description: "Massa, chocolate, granulado e leite condensado.",
+                    price: 39.90
+                  } 
+                } 
+              } 
+            },
+            responses: { 200: { description: 'Atualizado.' }, 400: { description: 'Dados inválidos.' }, 404: { description: 'Não encontrado.' }, 500: { description: 'Erro interno do servidor.' } }
         },
         patch: {
             tags: ['Items'],
             summary: 'Atualizar item (Parcial)',
             parameters: [{ in: 'path', name: 'id', schema: { type: 'integer' }, required: true }],
-            requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/Item' } } } },
-            responses: { 200: { description: 'Atualizado.' } }
+            requestBody: { 
+              content: { 
+                'application/json': { 
+                  schema: {
+                    type: 'object',  properties: { 
+                      item_id: { type: 'integer' },
+                      name: { type: 'string' },  
+                      description: { type: 'string' }, 
+                      price: { type: 'number' },
+                      section_id: { type: 'integer' }
+                    } 
+                  }, 
+                  example: {
+                    name: "Pizza de Sensação",
+                    description: "Massa, chocolate, morango",
+                    price: 44.90
+                  } 
+                } 
+              } 
+            },
+            responses: { 200: { description: 'Atualizado.' }, 400: { description: 'Dados inválidos.' }, 404: { description: 'Não encontrado.' }, 500: { description: 'Erro interno do servidor.' } }
         },
         delete: {
             tags: ['Items'],
             summary: 'Deletar item',
             parameters: [{ in: 'path', name: 'id', schema: { type: 'integer' }, required: true }],
-            responses: { 204: { description: 'Deletado.' } }
+            responses: { 204: { description: 'Deletado.' }, 404: { description: 'Não encontrado.' }, 500: { description: 'Erro interno do servidor.' } }
         }
       }
     },

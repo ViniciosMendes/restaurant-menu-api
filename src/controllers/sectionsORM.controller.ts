@@ -238,7 +238,7 @@ export const findAllItemsOfSection = async (req: Request, res: Response): Promis
             item_id: i.item_id,
             name: i.name,
             description: i.description,
-            price: i.price,
+            price: Number(i.price),
             section_id: i.section_id,
         }));
         return res.status(200).json(formatted);
