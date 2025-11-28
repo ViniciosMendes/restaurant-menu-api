@@ -1,13 +1,17 @@
 import { Router } from 'express';
 import controllerORM from '../controllers/sectionsORM.controller';
+import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
 
+// Public routes (GET)
 router.get('/:id', controllerORM.getSections);
-router.put('/:id', controllerORM.updateSectionFull);
-router.patch('/:id', controllerORM.updateSectionPartial);
-router.delete('/:id', controllerORM.deleteSections);
 router.get("/:id/items", controllerORM.findAllItemsOfSection);
-router.post("/:id/items", controllerORM.createItem);
+
+// Protected routes (POST, PATCH, DELETE, PUT)
+router.put('/:id', authMiddleware, controllerORM.updateSectionFull);
+router.patch('/:id', authMiddleware, controllerORM.updateSectionPartial);
+router.delete('/:id', authMiddleware, controllerORM.deleteSections);
+router.post("/:id/items", authMiddleware, controllerORM.createItem);
 
 export default router;

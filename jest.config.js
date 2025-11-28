@@ -9,7 +9,7 @@ module.exports = {
   testEnvironment: "node",
   collectCoverage: true,
   collectCoverageFrom: ["src/**/*.ts",
-                        "!src/migration/**",
+                        "!src/migrations/**",
                         "!src/tests/**",
                         "!src/index.ts",
                         "!src/data-source.ts",
