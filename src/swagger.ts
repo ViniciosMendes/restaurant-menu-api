@@ -14,7 +14,15 @@ const options = {
         description: 'Servidor de Desenvolvimento',
       },
     ],
+    security: [{ bearerAuth: [] }],
     components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
       schemas: {
         OpeningHour: {
           type: 'object',
