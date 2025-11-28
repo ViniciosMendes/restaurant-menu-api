@@ -16,10 +16,14 @@
     "docs": "ts-node src/swagger.ts"
   },
   "dependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/jest": "^30.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "jest": "^30.2.0",
+    "jsonwebtoken": "^9.0.2",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
     "swagger-autogen": "^2.23.7",

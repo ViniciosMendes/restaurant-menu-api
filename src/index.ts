@@ -1,5 +1,4 @@
-// src/index.ts
-// A IMPORTAÇÃO MAIS IMPORTANTE: Deve ser a primeira de todas.
+import 'dotenv/config';
 import 'reflect-metadata';
 import express from 'express';
 import { AppDataSource } from './data-source'; // Importe o AppDataSource
@@ -42,6 +41,10 @@ app.use(`${BASE_URL}/restaurants`, restaurantRoutes);
 app.use(`${BASE_URL}/sections`, sectionsRoutes);
 // Connects the URL '/v1/items' to the router file we created
 app.use(`${BASE_URL}/items`, itemsRoutes);
+
+import authRoutes from './routes/auth.routes';
+app.use(`${BASE_URL}/auth`, authRoutes);
+
 
 
 // FOI COMENTADO APENAS PARA O TESTE DO SWAGGER, SEM O DOCKER

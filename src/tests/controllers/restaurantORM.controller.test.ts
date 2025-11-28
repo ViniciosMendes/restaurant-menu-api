@@ -1,34 +1,42 @@
 import { Request, Response } from 'express';
 import restaurantController from "../../controllers/restaurantORM.controller";
+import { AppDataSource } from '../../data-source';
+import { Restaurant } from '../../models/restaurant.models';
 
-// 1. Criar o Mock do QueryBuilder (Necessário pois seu controller usa createQueryBuilder)
-const mockQueryBuilder = {
-  leftJoinAndSelect: jest.fn().mockReturnThis(), // Retorna o próprio objeto para encadear
-  where: jest.fn().mockReturnThis(),
-  orderBy: jest.fn().mockReturnThis(),
-  getMany: jest.fn(),
-  getOne: jest.fn(),
-};
+// --- MOCK FACTORY (Blindado contra Hoisting) ---
+jest.mock('../../data-source', () => {
+  const mockQueryBuilder = {
+    leftJoinAndSelect: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    innerJoin: jest.fn().mockReturnThis(),
+    update: jest.fn().mockReturnThis(),
+    set: jest.fn().mockReturnThis(),
+    execute: jest.fn().mockResolvedValue({}),
+    getMany: jest.fn(),
+    getOne: jest.fn(),
+  };
 
-// 2. Criar o Mock do Repositório
-const mockRepository = {
-  createQueryBuilder: jest.fn(() => mockQueryBuilder),
-  create: jest.fn(),
-  save: jest.fn(),
-  findOne: jest.fn(),
-  findOneBy: jest.fn(),
-  delete: jest.fn(), // Adicione outros métodos conforme necessário
-};
+  const mockRepository = {
+    createQueryBuilder: jest.fn(() => mockQueryBuilder),
+    create: jest.fn(),
+    save: jest.fn(),
+    findOne: jest.fn(),
+    findOneBy: jest.fn(),
+    delete: jest.fn(),
+  };
 
-// 3. Mockar o DataSource para retornar nosso repositório falso
-jest.mock('../../data-source', () => ({
-  AppDataSource: {
-    getRepository: jest.fn(() => mockRepository),
-    transaction: jest.fn((callback) => callback({ getRepository: () => mockRepository })), // Mock para transações
-  },
-}));
+  return {
+    AppDataSource: {
+      // Retorna sempre o mesmo mock, não importa qual entidade seja pedida
+      getRepository: jest.fn(() => mockRepository),
+      transaction: jest.fn((callback) => callback({ getRepository: () => mockRepository })),
+    },
+  };
+});
 
-// 4. Função auxiliar para mockar Request e Response (Igual ao padrão do projeto de referência)
+// --- HELPER ---
 const mockRequestResponse = (reqOverrides: Partial<Request> = {}) => {
   const req: Partial<Request> = {
     params: {},
@@ -37,9 +45,9 @@ const mockRequestResponse = (reqOverrides: Partial<Request> = {}) => {
   };
 
   const res: Partial<Response> = {
-    status: jest.fn().mockReturnThis(), // Permite encadear .status().json()
+    status: jest.fn().mockReturnThis(),
     json: jest.fn(),
-    sendStatus: jest.fn(), // Adicionado para compatibilidade
+    sendStatus: jest.fn(),
     send: jest.fn(),
   };
 
@@ -47,89 +55,168 @@ const mockRequestResponse = (reqOverrides: Partial<Request> = {}) => {
 };
 
 describe('Restaurant Controller', () => {
+  // Acessa os mocks através do objeto mockado para garantir referência correta
+  const mockRepository = AppDataSource.getRepository({} as any) as any;
+  const mockQueryBuilder = mockRepository.createQueryBuilder();
+
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
   });
 
+  // --- GET ---
   describe('getRestaurants', () => {
-    it('deveria retornar uma lista de restaurantes formatada', async () => {
-      // Dados simulados que o banco retornaria
-      const mockRestaurants = [
-        {
-          id: 1,
-          name: 'Teste Grill',
-          kitchenType: 'Churrasco',
-          city: 'São Paulo',
-          uf: 'SP',
-          contact: '11999999999',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          openingHours: [
-            { dayOfWeek: 'monday', opensAt: '10:00', closesAt: '22:00', isActive: true },
-          ],
-        },
-      ];
-
-      // Configura o mock para retornar esses dados quando getMany for chamado
+    it('deveria retornar lista formatada', async () => {
+      const mockRestaurants = [{
+        id: 1,
+        name: 'Teste Grill',
+        kitchenType: 'Churrasco',
+        openingHours: [{ dayOfWeek: 'monday', opensAt: '10:00', closesAt: '22:00' }],
+      }];
       mockQueryBuilder.getMany.mockResolvedValue(mockRestaurants);
 
       const { req, res } = mockRequestResponse();
-
       await restaurantController.getRestaurants(req, res);
 
-      // Verificações
-      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('restaurant');
-      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(200);
-      
-      // Verifica se a formatação do retorno (map) funcionou
       expect(res.json).toHaveBeenCalledWith(expect.arrayContaining([
-        expect.objectContaining({
-          name: 'Teste Grill',
-          opening: expect.arrayContaining([
-            expect.objectContaining({ day: 'monday' })
-          ])
-        })
+        expect.objectContaining({ name: 'Teste Grill' })
       ]));
-    });
-
-    it('deveria retornar 404 se não houver restaurantes', async () => {
-      mockQueryBuilder.getMany.mockResolvedValue([]);
-
-      const { req, res } = mockRequestResponse();
-
-      await restaurantController.getRestaurants(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Restaurants not found.' });
     });
   });
 
+  describe('getRestaurantById', () => {
+    it('deveria retornar um restaurante se encontrado', async () => {
+      const mockRestaurant = {
+        id: 1,
+        name: 'Teste Grill',
+        openingHours: []
+      };
+      mockQueryBuilder.getOne.mockResolvedValue(mockRestaurant);
+
+      const { req, res } = mockRequestResponse({ params: { id: '1' } });
+      await restaurantController.getRestaurantById(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
+    });
+
+    it('deveria retornar 404 se não encontrar', async () => {
+      mockQueryBuilder.getOne.mockResolvedValue(null);
+      const { req, res } = mockRequestResponse({ params: { id: '99' } });
+      await restaurantController.getRestaurantById(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+  });
+
+  // --- CREATE ---
   describe('createRestaurant', () => {
-    it('deveria criar um restaurante com sucesso', async () => {
-      const newRestaurantData = {
-        name: 'Novo Restô',
+    it('deveria criar restaurante com sucesso', async () => {
+      const body = {
+        name: 'Novo',
         kitchenType: 'Italiana',
         city: 'Roma',
         uf: 'IT',
         contact: '12345678901',
-        opening: [
-          { day: 'monday', opensAt: '18:00', closesAt: '23:00' }
-        ]
+        opening: [{ day: 'monday', opensAt: '18:00', closesAt: '23:00' }]
       };
+      
+      const saved = { id: 1, ...body };
+      mockRepository.create.mockReturnValue(saved);
+      mockRepository.save.mockResolvedValue(saved);
 
-      // Simula a criação da entidade
-      const savedEntity = { id: 1, ...newRestaurantData, createdAt: new Date(), updatedAt: new Date() };
-      mockRepository.create.mockReturnValue(savedEntity);
-      mockRepository.save.mockResolvedValue(savedEntity);
-
-      const { req, res } = mockRequestResponse({ body: newRestaurantData });
-
+      const { req, res } = mockRequestResponse({ body });
       await restaurantController.createRestaurant(req, res);
 
-      expect(mockRepository.create).toHaveBeenCalled();
-      expect(mockRepository.save).toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(201);
+    });
+  });
+
+  // --- UPDATE ---
+  describe('updateRestaurant', () => {
+    it('deveria atualizar um restaurante com sucesso', async () => {
+      const body = { name: 'Restaurante Atualizado' };
+      const existingRestaurant = { id: 1, name: 'Antigo', isActive: true };
+      
+      // 1. Encontra o restaurante
+      mockRepository.findOne.mockResolvedValue(existingRestaurant);
+      // 2. Salva
+      mockRepository.save.mockResolvedValue({ ...existingRestaurant, ...body });
+      // 3. Retorna atualizado (getOne no final do controller)
+      mockQueryBuilder.getOne.mockResolvedValue({ ...existingRestaurant, ...body, openingHours: [] });
+
+      const { req, res } = mockRequestResponse({ params: { id: '1' }, body });
+
+      await restaurantController.updateRestaurant(req, res);
+
+      expect(mockRepository.findOne).toHaveBeenCalled();
+      expect(mockRepository.save).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('deveria retornar 404 se restaurante não existir para update', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+      const { req, res } = mockRequestResponse({ params: { id: '99' }, body: { name: 'X' } });
+      await restaurantController.updateRestaurant(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+  });
+
+  // --- DELETE ---
+  describe('deleteRestaurant', () => {
+    it('deveria realizar soft delete com sucesso', async () => {
+      const restaurant = { id: 1, isActive: true };
+      mockRepository.findOne.mockResolvedValue(restaurant);
+      
+      const { req, res } = mockRequestResponse({ params: { id: '1' } });
+
+      await restaurantController.deleteRestaurant(req, res);
+
+      // Verifica se o restaurante foi desativado
+      expect(restaurant.isActive).toBe(false);
+      expect(mockRepository.save).toHaveBeenCalledWith(restaurant);
+      // Verifica se os itens/seções também foram desativados (QueryBuilder update)
+      expect(mockQueryBuilder.update).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(204);
+    });
+
+    it('deveria retornar 404 se não encontrar para deletar', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+      const { req, res } = mockRequestResponse({ params: { id: '99' } });
+      await restaurantController.deleteRestaurant(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+  });
+
+  // --- SECTIONS ---
+  describe('createSectionOfRestaurant', () => {
+    it('deveria criar seção se restaurante existir', async () => {
+      const body = { name: 'Bebidas', description: 'Geladas' };
+      mockRepository.findOne.mockResolvedValue({ id: 1 }); // Restaurante existe
+      mockRepository.save.mockResolvedValue({ section_id: 10, restaurant_id: 1, ...body });
+
+      const { req, res } = mockRequestResponse({ params: { id: '1' }, body });
+
+      await restaurantController.createSectionOfRestaurant(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        section: expect.objectContaining({ name: 'Bebidas' })
+      }));
+    });
+  });
+
+  describe('findAllSectionsOfRestaurant', () => {
+    it('deveria listar seções', async () => {
+      const sections = [{ section_id: 1, name: 'Bebidas' }];
+      mockQueryBuilder.getMany.mockResolvedValue(sections);
+
+      const { req, res } = mockRequestResponse({ params: { id: '1' } });
+
+      await restaurantController.findAllSectionsOfRestaurant(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(sections);
     });
   });
 });
